@@ -26,7 +26,7 @@ export default function Home() {
           background: "#fff",
           padding: "2rem",
           borderRadius: "8px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 12px rgba(212, 24, 24, 0.08)",
           minWidth: "320px"
         }}
       >
