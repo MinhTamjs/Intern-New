@@ -6,7 +6,7 @@ export default function Home() {
   {/* Left side: Image + logo */}
   <div className="hidden md:block relative">
     <img
-      src="/bt.jpg"
+      src="/LoginBG.png"
       alt="Login background"
       className="absolute inset-0 object-cover w-full h-full"
     />
