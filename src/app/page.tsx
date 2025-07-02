@@ -28,28 +28,25 @@ export default function Home() {
           padding: "2rem",
           borderRadius: "8px",
           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-          minWidth: "320px"
+          minWidth: "320px",
+          border: "1px solid #ccc"
         }}
       >
-        <h1 style={{ textAlign: "center", marginBottom: "1.5rem" }}>Login</h1>
+        <h1 style={{ fontSize: "50px",fontStyle:"bold", textAlign: "center",color: "black", marginBottom: "1.5rem" }}>Login</h1>
         <div style={{ marginBottom: "1rem" }}>
-          <label htmlFor="email" style={{ display: "block", marginBottom: ".5rem" }}>Email:</label>
+          <label htmlFor="email" style={{ display: "block",color: "black", marginBottom: ".5rem" }}>Email:</label>
           <input
             type="email"
             id="email"
+            placeholder="...@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{
-              width: "100%",
-              padding: ".5rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc"
-            }}
+            className="w-full p-2 rounded-md border border-gray-300 placeholder-black-800"
           />
         </div>
         <div style={{ marginBottom: "1.5rem" }}>
-          <label htmlFor="password" style={{ display: "block", marginBottom: ".5rem" }}>Password:</label>
+          <label htmlFor="password" style={{ display: "block",color: "black", marginBottom: ".5rem" }}>Password:</label>
           <input
             type="password"
             id="password"
@@ -71,11 +68,12 @@ export default function Home() {
             padding: ".75rem",
             borderRadius: "4px",
             border: "none",
-            background: "#0070f3",
-            color: "#fff",
+            background: "#EA580C",
+            color: "#FFD580",
             fontWeight: "bold",
             fontSize: "1rem",
-            cursor: "pointer"
+            cursor: "pointer",
+           
           }}
         >
           Login
