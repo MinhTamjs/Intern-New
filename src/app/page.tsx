@@ -18,7 +18,7 @@ export default function Home() {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      background: "#f5f6fa"
+      background: "#ff69b4"
     }}>
       <form
         onSubmit={handleSubmit}
@@ -26,7 +26,7 @@ export default function Home() {
           background: "#fff",
           padding: "2rem",
           borderRadius: "8px",
-          boxShadow: "0 2px 12px rgba(212, 24, 24, 0.08)",
+          boxShadow: "0 2px 12px rgba(255, 0, 0, 0.08)",
           minWidth: "320px"
         }}
       >
@@ -70,8 +70,8 @@ export default function Home() {
             padding: ".75rem",
             borderRadius: "4px",
             border: "none",
-            background: "#0070f3",
-            color: "#fff",
+            background: "#ff69b4",
+            color: "#000000",
             fontWeight: "bold",
             fontSize: "1rem",
             cursor: "pointer"
