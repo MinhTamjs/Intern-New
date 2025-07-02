@@ -6,7 +6,7 @@ export default function Home() {
   {/* Left side: Image + logo */}
   <div className="hidden md:block relative">
     <img
-      src="/your-background.jpg"
+      src="/LoginBG.png"
       alt="Login background"
       className="absolute inset-0 object-cover w-full h-full"
     />
@@ -61,7 +61,7 @@ export default function Home() {
 
       {/* Google login */}
       <button className="mt-3 w-full border py-2 rounded flex items-center justify-center gap-2 hover:bg-gray-100">
-        <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
+        <img src="/Google.svg" alt="Google" className="w-5 h-5" />
         Login with Google
       </button>
 
