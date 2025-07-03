@@ -1,88 +1,131 @@
-"use client";
-import { useState } from "react";
+'use client';
 
-export default function Home() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+import { useState } from 'react';
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Placeholder for form submission logic
-    console.log("Email:", email);
-    console.log("Password:", password);
+type User = {
+  name: string;
+  age: number;
+  isOnline: boolean;
+};
+
+export default function HomePage() {
+  const [userList, setUserList] = useState<User[]>([
+    { name: 'Minh', age: 30, isOnline: true },
+    { name: 'Lan', age: 24, isOnline: false },
+    { name: 'Huy', age: 27, isOnline: true },
+  ]);
+  const [form, setForm] = useState<User>({ name: '', age: 0, isOnline: false });
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [error, setError] = useState<string>('');
+
+  const handleSubmit = () => {
+    if (!form.name.trim()) {
+      setError('Tên không được để trống.');
+      return;
+    }
+
+    if (form.age <= 0 || isNaN(form.age)) {
+      setError('Tuổi phải lớn hơn 0.');
+      return;
+    }
+
+    setError('');
+
+    if (editIndex !== null) {
+      const newList = [...userList];
+      newList[editIndex] = form;
+      setUserList(newList);
+      setEditIndex(null);
+    } else {
+      setUserList([...userList, form]);
+    }
+
+    setForm({ name: '', age: 0, isOnline: false });
+  };
+
+  const handleEdit = (index: number) => {
+    setForm(userList[index]);
+    setEditIndex(index);
+    setError('');
+  };
+
+  const handleDelete = (index: number) => {
+    const newList = userList.filter((_, i) => i !== index);
+    setUserList(newList);
+    setError('');
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      background: "#ff69b4"
-    }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "8px",
-          boxShadow: "0 2px 12px rgba(255, 0, 0, 0.08)",
-          minWidth: "320px"
-        }}
-      >
-        <h1 style={{ textAlign: "center", marginBottom: "1.5rem" }}>Login</h1>
-        <div style={{ marginBottom: "1rem" }}>
-          <label htmlFor="email" style={{ display: "block", marginBottom: ".5rem" }}>Email:</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              width: "100%",
-              padding: ".5rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc"
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: "1.5rem" }}>
-          <label htmlFor="password" style={{ display: "block", marginBottom: ".5rem" }}>Password:</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              width: "100%",
-              padding: ".5rem",
-              borderRadius: "4px",
-              border: "1px solid #ccc"
-            }}
-          />
-        </div>
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: ".75rem",
-            borderRadius: "4px",
-            border: "none",
-            background: "#ff69b4",
-            color: "#000000",
-            fontWeight: "bold",
-            fontSize: "1rem",
-            cursor: "pointer"
-          }}
-        >
-          Login
-        </button>
-      </form>
-    </div>
-  </div>
-</div>
+    <main style={{ padding: 20, fontFamily: 'Arial' }}>
+      <h1> Giao diện quản lý người dùng</h1>
 
+      <div style={{ marginBottom: 20, border: '1px solid #ccc', padding: 15, borderRadius: 8 }}>
+        <h2>{editIndex !== null ? '✏️ Sửa người dùng' : '➕ Thêm người dùng'}</h2>
+        <input
+          type="text"
+          placeholder="Tên"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          style={{ marginRight: 10, padding: 5 }}
+        />
+        <input
+          type="number"
+          placeholder="Tuổi"
+          value={form.age}
+          onChange={(e) => setForm({ ...form, age: parseInt(e.target.value) })}
+          style={{ marginRight: 10, padding: 5, width: 80 }}
+        />
+        <label style={{ marginRight: 10 }}>
+          <input
+            type="checkbox"
+            checked={form.isOnline}
+            onChange={(e) => setForm({ ...form, isOnline: e.target.checked })}
+          />{' '}
+          Online
+        </label>
+        <button onClick={handleSubmit} style={{ padding: '5px 12px' }}>
+          {editIndex !== null ? 'Cập nhật' : 'Thêm'}
+        </button>
+
+        {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
+      </div>
+
+      <h2> Danh sách người dùng</h2>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={cellStyle}>#</th>
+            <th style={cellStyle}>Tên</th>
+            <th style={cellStyle}>Tuổi</th>
+            <th style={cellStyle}>Trạng thái</th>
+            <th style={cellStyle}>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {userList.map((user, index) => (
+            <tr key={index}>
+              <td style={cellStyle}>{index + 1}</td>
+              <td style={cellStyle}>{user.name}</td>
+              <td style={cellStyle}>{user.age}</td>
+              <td style={{ ...cellStyle, color: user.isOnline ? 'green' : 'gray' }}>
+                {user.isOnline ? 'Online' : 'Offline'}
+              </td>
+              <td style={cellStyle}>
+                <button onClick={() => handleEdit(index)} style={{ marginRight: 5 }}>
+                  Sửa
+                </button>
+                <button onClick={() => handleDelete(index)}>Xóa</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </main>
   );
 }
+
+const cellStyle = {
+  border: '1px solid #ccc',
+  padding: '8px',
+  textAlign: 'center' as const,
+};
