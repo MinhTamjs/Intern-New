@@ -56,11 +56,31 @@ export default function HomePage() {
   };
 
   return (
-    <main style={{ padding: 20, fontFamily: 'Arial' }}>
-      <h1> Giao diện quản lý người dùng</h1>
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+  {/* Left side: Image + logo */}
+  <div className="hidden md:block relative">
+    <img
+      src="/bt.jpg"
+      alt="Login background"
+      className="absolute inset-0 object-cover w-full h-full"
+    />
+    <div className="absolute inset-0 bg-black/40" />
+    <div className="relative z-10 flex h-full items-center justify-center">
+      <img src="/logo.svg" alt="Logo" className="w-24 h-24" />
+    </div>
+  </div>
 
-      <div style={{ marginBottom: 20, border: '1px solid #ccc', padding: 15, borderRadius: 8 }}>
-        <h2>{editIndex !== null ? '✏️ Sửa người dùng' : '➕ Thêm người dùng'}</h2>
+  {/* Right side: Login form */}
+  <div className="flex flex-col justify-center items-center px-6 sm:px-12 py-12">
+    <div className="w-full max-w-md">
+      <h1 className="text-2xl font-bold">Login</h1>
+      <p className="text-gray-500 mt-2">
+        Enter your email below to login to your account
+      </p>
+
+      {/* Email */}
+      <div className="mt-6">
+        <label className="block text-sm font-medium">Email</label>
         <input
           type="text"
           placeholder="Tên"
@@ -90,42 +110,37 @@ export default function HomePage() {
         {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
       </div>
 
-      <h2> Danh sách người dùng</h2>
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th style={cellStyle}>#</th>
-            <th style={cellStyle}>Tên</th>
-            <th style={cellStyle}>Tuổi</th>
-            <th style={cellStyle}>Trạng thái</th>
-            <th style={cellStyle}>Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          {userList.map((user, index) => (
-            <tr key={index}>
-              <td style={cellStyle}>{index + 1}</td>
-              <td style={cellStyle}>{user.name}</td>
-              <td style={cellStyle}>{user.age}</td>
-              <td style={{ ...cellStyle, color: user.isOnline ? 'green' : 'gray' }}>
-                {user.isOnline ? 'Online' : 'Offline'}
-              </td>
-              <td style={cellStyle}>
-                <button onClick={() => handleEdit(index)} style={{ marginRight: 5 }}>
-                  Sửa
-                </button>
-                <button onClick={() => handleDelete(index)}>Xóa</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
+      {/* Error message */}
+      <p className="text-sm text-red-500 mt-3">
+        ❌ Incorrect username or password.
+      </p>
+
+      {/* Login button */}
+      <button className="mt-4 w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600">
+        Login
+      </button>
+
+      {/* Google login */}
+      <button className="mt-3 w-full border py-2 rounded flex items-center justify-center gap-2 hover:bg-gray-100">
+        <img src="/th.jpg" alt="Google" className="w-5 h-5" />
+        Login with Google
+      </button>
+
+      {/* Sign up link */}
+      <p className="mt-6 text-center text-sm">
+        Don’t have an account?{" "}
+        <a href="#" className="text-orange-500 font-medium">
+          Sign up
+        </a>
+      </p>
+
+      {/* Footer */}
+      <p className="mt-10 text-center text-xs text-gray-400">
+        Crafted with ❤️ by OneXAPIs team
+      </p>
+    </div>
+  </div>
+</div>
+
   );
 }
-
-const cellStyle = {
-  border: '1px solid #ccc',
-  padding: '8px',
-  textAlign: 'center' as const,
-};
