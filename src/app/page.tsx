@@ -1,131 +1,103 @@
-'use client';
+import Image from "next/image";
 
-import { useState } from 'react';
-
-type User = {
-  name: string;
-  age: number;
-  isOnline: boolean;
-};
-
-export default function HomePage() {
-  const [userList, setUserList] = useState<User[]>([
-    { name: 'Minh', age: 30, isOnline: true },
-    { name: 'Lan', age: 24, isOnline: false },
-    { name: 'Huy', age: 27, isOnline: true },
-  ]);
-  const [form, setForm] = useState<User>({ name: '', age: 0, isOnline: false });
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [error, setError] = useState<string>('');
-
-  const handleSubmit = () => {
-    if (!form.name.trim()) {
-      setError('Tên không được để trống.');
-      return;
-    }
-
-    if (form.age <= 0 || isNaN(form.age)) {
-      setError('Tuổi phải lớn hơn 0.');
-      return;
-    }
-
-    setError('');
-
-    if (editIndex !== null) {
-      const newList = [...userList];
-      newList[editIndex] = form;
-      setUserList(newList);
-      setEditIndex(null);
-    } else {
-      setUserList([...userList, form]);
-    }
-
-    setForm({ name: '', age: 0, isOnline: false });
-  };
-
-  const handleEdit = (index: number) => {
-    setForm(userList[index]);
-    setEditIndex(index);
-    setError('');
-  };
-
-  const handleDelete = (index: number) => {
-    const newList = userList.filter((_, i) => i !== index);
-    setUserList(newList);
-    setError('');
-  };
-
+export default function Home() {
   return (
-    <main style={{ padding: 20, fontFamily: 'Arial' }}>
-      <h1> Giao diện quản lý người dùng</h1>
-
-      <div style={{ marginBottom: 20, border: '1px solid #ccc', padding: 15, borderRadius: 8 }}>
-        <h2>{editIndex !== null ? '✏️ Sửa người dùng' : '➕ Thêm người dùng'}</h2>
-        <input
-          type="text"
-          placeholder="Tên"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          style={{ marginRight: 10, padding: 5 }}
+    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={180}
+          height={38}
+          priority
         />
-        <input
-          type="number"
-          placeholder="Tuổi"
-          value={form.age}
-          onChange={(e) => setForm({ ...form, age: parseInt(e.target.value) })}
-          style={{ marginRight: 10, padding: 5, width: 80 }}
-        />
-        <label style={{ marginRight: 10 }}>
-          <input
-            type="checkbox"
-            checked={form.isOnline}
-            onChange={(e) => setForm({ ...form, isOnline: e.target.checked })}
-          />{' '}
-          Online
-        </label>
-        <button onClick={handleSubmit} style={{ padding: '5px 12px' }}>
-          {editIndex !== null ? 'Cập nhật' : 'Thêm'}
-        </button>
+        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
+          <li className="mb-2 tracking-[-.01em]">
+            Get started by editing{" "}
+            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
+              src/app/page.tsx
+            </code>
+            .
+          </li>
+          <li className="tracking-[-.01em]">
+            Save and see your changes instantly.
+          </li>
+        </ol>
 
-        {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
-      </div>
-
-      <h2> Danh sách người dùng</h2>
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th style={cellStyle}>#</th>
-            <th style={cellStyle}>Tên</th>
-            <th style={cellStyle}>Tuổi</th>
-            <th style={cellStyle}>Trạng thái</th>
-            <th style={cellStyle}>Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          {userList.map((user, index) => (
-            <tr key={index}>
-              <td style={cellStyle}>{index + 1}</td>
-              <td style={cellStyle}>{user.name}</td>
-              <td style={cellStyle}>{user.age}</td>
-              <td style={{ ...cellStyle, color: user.isOnline ? 'green' : 'gray' }}>
-                {user.isOnline ? 'Online' : 'Offline'}
-              </td>
-              <td style={cellStyle}>
-                <button onClick={() => handleEdit(index)} style={{ marginRight: 5 }}>
-                  Sửa
-                </button>
-                <button onClick={() => handleDelete(index)}>Xóa</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
+        <div className="flex gap-4 items-center flex-col sm:flex-row">
+          <a
+            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={20}
+              height={20}
+            />
+            Deploy now
+          </a>
+          <a
+            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Read our docs
+          </a>
+        </div>
+      </main>
+      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/file.svg"
+            alt="File icon"
+            width={16}
+            height={16}
+          />
+          Learn
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/window.svg"
+            alt="Window icon"
+            width={16}
+            height={16}
+          />
+          Examples
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/globe.svg"
+            alt="Globe icon"
+            width={16}
+            height={16}
+          />
+          Go to nextjs.org →
+        </a>
+      </footer>
+    </div>
   );
 }
-
-const cellStyle = {
-  border: '1px solid #ccc',
-  padding: '8px',
-  textAlign: 'center' as const,
-};
