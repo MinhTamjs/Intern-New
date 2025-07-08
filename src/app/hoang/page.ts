@@ -1,0 +1,1 @@
+const test_hoang = 1;
