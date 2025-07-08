@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản Lý Công Việc</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Quản Lý Công Việc</h1>
+ <div>
+   <select id="taskPriority">
+    <option value="High">High</option>
+    <option value="Medium">Medium</option>
+    <option value="Low">Low</option>
+    </select>
+  <input type="text" id="taskTitle" placeholder="Tiêu đề....">
+  <input type="text" id="taskName" placeholder="Nội Dung Công Việc.....">
+  <input type="date" id="dayStarted">
+  <input type="date" id="dayExpired">
+  <select id="taskStatus">
+    <option value="Pending">Pending</option>
+    <option value="In Progress">In Progress</option>
+    <option value="Done">Done</option>
+    <option value="Expired">Expired</option>
+  </select>
+  <button id="addBtn"> ADD </button>
+
+  <input type="text" id="filter" placeholder="Lọc theo tên...">
+  <button id="filterBtn">Filter</button>
+ 
+ 
+</div>
+
+<div>
+ <h2>Danh sách công việc</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Priority</th>
+        <th>Title</th>
+        <th>Task</th>
+        <th>Day Started</th>
+        <th>Day Expired</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="taskTable">
+
+    </tbody>
+  </table>
+</div>
+  <script src="app.js"></script>
+</body>
+</html>
