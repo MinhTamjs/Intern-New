@@ -1,0 +1,99 @@
+:root {
+  --primary: #2c3e50; --accent: #3498db; --bg: #f7f9fc;
+  --high: #ffdddd; --medium: #fff9cc; --low: #ddffdd;
+  --border-radius: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--bg);
+  padding: 20px; color: #333;
+}
+
+.container {
+  max-width: 800px; margin: auto;
+  background: white; padding: 30px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+h1 {
+  text-align: center; color: var(--primary);
+  margin-bottom: 30px;
+}
+
+.form, .filter {
+  display: flex; flex-wrap: wrap;
+  gap: 10px; margin-bottom: 20px;
+}
+
+.form input, .form select, .filter select, .form button {
+  flex: 1 1 200px;
+  padding: 10px; font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius);
+}
+
+.form button {
+  background: var(--accent); color: white;
+  font-weight: bold; border: none;
+  cursor: pointer; transition: 0.3s;
+}
+
+.form button:hover { background: #217dbb; }
+
+.task {
+  background: white;
+  border-left: 6px solid gray;
+  padding: 15px 20px;
+  border-radius: var(--border-radius);
+  margin-bottom: 15px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+.task:hover { transform: translateY(-2px); }
+
+.high { border-color: #e74c3c; background: var(--high); }
+.medium { border-color: #f39c12; background: var(--medium); }
+.low { border-color: #27ae60; background: var(--low); }
+
+.task strong { font-size: 16px; color: var(--primary); }
+.task em { font-size: 13px; color: #666; }
+
+.task button {
+  margin-top: 10px;
+  background: #e74c3c; color: white;
+  border: none; padding: 6px 12px;
+  border-radius: 6px; font-size: 13px;
+  cursor: pointer;
+}
+.task button:hover { background: #c0392b; }
+
+#searchInput {
+  width: 100%; max-width: 300px;
+  padding: 8px 12px; margin: 10px 0 20px;
+  font-size: 16px; border: 1px solid #ccc;
+  border-radius: 20px; outline: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: 0.3s;
+}
+#searchInput:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 6px rgba(0,123,255,0.4);
+}
+
+.edit-form {
+  margin-top: 10px; padding: 10px;
+  background: #f0f0f0; border-radius: 8px;
+}
+.edit-form input, .edit-form select {
+  margin: 5px 0; padding: 5px; width: 100%;
+}
+.edit-form button { margin-right: 5px; }
+
+@media (max-width: 600px) {
+  .form { flex-direction: column; }
+  .form input, .form select, .form button { width: 100%; }
+}
