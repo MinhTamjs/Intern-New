@@ -1,0 +1,106 @@
+
+    body {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  margin: 30px;
+  text-align: center;
+  color: #333;
+}
+
+h1, h2 {
+  color: #2c3e50;
+}
+
+input, select, button {
+  padding: 8px 12px;
+  margin: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+input[type="date"] {
+  width: 160px;
+}
+
+button {
+  cursor: pointer;
+  background-color: #113750;
+  color: white;
+  border: none;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #0c324a;
+}
+
+/* TABLE */
+table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+th, td {
+  padding: 8px;
+  border: 1px solid #ccc;
+  text-align: center;
+  word-wrap: break-word;
+}
+
+
+th {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* STATUS COLORS */
+td.status-pending {
+  color: rgb(86, 81, 72);
+  font-weight: bold;
+}
+
+td.status-inprogress {
+  color: rgb(119, 255, 0);
+  font-weight: bold;
+}
+
+td.status-done {
+  color: rgb(3, 57, 3);
+  font-weight: bold;
+}
+td.status-expired {
+      color: red;
+      font-weight: bold;
+      text-shadow: #aaa;
+    }
+
+/* ACTION BUTTONS in table */
+.action-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  margin: 0 2px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+}
+
+.edit-btn {
+  background-color: #152f59;
+}
+
+.edit-btn:hover {
+  background-color: #16046d;
+}
+
+.delete-btn {
+  background-color: #cc301f;
+}
+
+.delete-btn:hover {
+  background-color: #4e0b03;
+}
