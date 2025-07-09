@@ -1,13 +1,4 @@
-//=> Bài tập: Viết một hàm tính diện tích hình tròn, trong đó:
-//Dùng const để khai báo số π.
-//Dùng let cho biến bán kính.
-//Dùng var cho biến diện tích.
-let a = 7
-function tinhDienTichHinhTron() {
-  const pi = 3.14;
-  let bankinh = a;
-  var dientich = bankinh * bankinh * pi;
+let cau = "Tôi tên là Kris";
 
-  console.log(`Diện tích hình tròn có bán kính là ${a} = ${dientich}`);
-}
-tinhDienTichHinhTron();
+console.log(cau.toLowerCase().includes("t",4));
+console.log(cau.toLowerCase().startsWith("t"));

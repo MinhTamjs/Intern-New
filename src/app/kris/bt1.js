@@ -1,3 +1,5 @@
+const { cau } = require("./test");
+
 let a = 15
 function tinhDienTichHinhTron() {
     const pi = 3.14;
@@ -6,3 +8,4 @@ function tinhDienTichHinhTron() {
     console.log(`Diện tích hình tròn có bán kính ${bankinh}  là ${dientich} `)
 };
 tinhDienTichHinhTron();
+console.log(cau.toLowerCase().includes("t"));
