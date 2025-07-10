@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Công Việc</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎯 Quản Lý Công Việc</h1>
+
+        <!-- Form thêm công việc -->
+        <div class="task-form">
+            <div class="form-group">
+                <label for="taskTitle">Tiêu đề công việc:</label>
+                <input type="text" id="taskTitle" placeholder="Nhập tiêu đề công việc..." maxlength="100">
+            </div>
+
+            <div class="form-group">
+                <label for="taskPriority">Mức độ ưu tiên:</label>
+                <select id="taskPriority">
+                    <option value="low">Thấp</option>
+                    <option value="medium" selected>Trung bình</option>
+                    <option value="high">Cao</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="taskDueDate">Ngày hết hạn:</label>
+                <input type="date" id="taskDueDate" min="">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-primary" id="addTaskBtn">
+                    ➕ Thêm Công Việc
+                </button>
+            </div>
+        </div>
+
+        <!-- Tìm kiếm -->
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Tìm kiếm công việc...">
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="filter-section">
+            <label>Lọc theo độ ưu tiên:</label>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-priority="all">Tất cả</button>
+                <button class="filter-btn" data-priority="high">Cao</button>
+                <button class="filter-btn" data-priority="medium">Trung bình</button>
+                <button class="filter-btn" data-priority="low">Thấp</button>
+            </div>
+        </div>
+
+        <!-- Danh sách công việc -->
+        <div class="tasks-container">
+            <div class="tasks-header">
+                <div class="tasks-count" id="tasksCount">0 công việc</div>
+            </div>
+            <div id="tasksList"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

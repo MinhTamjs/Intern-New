@@ -15,10 +15,10 @@
 //    console.log(`${tên} có điểm toán: ${môn.toán}, có điểm văn: ${môn.văn}`);
 //}
 
-const chitieu = new Map([
-    ["Tháng 1", { gao: "2 triệu", quanao: "4 triệu", thucan: "5 triệu" }],
-    ["Tháng 2", { gao: "1 triệu", quanao: "500 nghìn", thucan: "3 triệu" }]
-]);
-for (let [Tháng, obj] of chitieu) {
-    console.log(`${Tháng} mua gạo hết: ${obj.gao}, mua quần áo hết: ${obj.quanao}, mua thức ăn hết: ${obj.thucan}`);
-}
+//const chitieu = new Map([
+//    ["Tháng 1", { gao: "2 triệu", quanao: "4 triệu", thucan: "5 triệu" }],
+//    ["Tháng 2", { gao: "1 triệu", quanao: "500 nghìn", thucan: "3 triệu" }]
+//]);
+//for (let [thang,obj] of chitieu) {
+//    console.log(`${thang} mua gạo hết: ${obj.gao}, mua quần áo hết: ${obj.quanao}, mua thức ăn hết: ${obj.thucan}`);
+//}
