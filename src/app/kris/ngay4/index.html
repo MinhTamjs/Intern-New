@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng Dụng Quản Lý Công Việc - Ngày 4</title>
+    <link rel="stylesheet" href="styles/TodoApp.css">
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- React và ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel để compile JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Main application script -->
+    <script type="text/babel">
+        // Utility functions
+        const formatDate = (date) => {
+            return new Intl.DateTimeFormat('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        };
+
+        const getRelativeTime = (date) => {
+            const now = new Date();
+            const diffInMs = now.getTime() - date.getTime();
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+            if (diffInMinutes < 1) {
+                return 'Vừa xong';
+            } else if (diffInMinutes < 60) {
+                return `${diffInMinutes} phút trước`;
+            } else if (diffInHours < 24) {
+                return `${diffInHours} giờ trước`;
+            } else if (diffInDays < 7) {
+                return `${diffInDays} ngày trước`;
+            } else {
+                return formatDate(date);
+            }
+        };
+
+        // TodoStorageService
+        class TodoStorageService {
+            static STORAGE_KEY = 'todos';
+
+            static saveTodos(todos) {
+                try {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(todos));
+                } catch (error) {
+                    console.error('Lỗi khi lưu vào localStorage:', error);
+                }
+            }
+
+            static loadTodos() {
+                try {
+                    const stored = localStorage.getItem(this.STORAGE_KEY);
+                    if (stored) {
+                        const todos = JSON.parse(stored);
+                        return todos.map(todo => ({
+                            ...todo,
+                            createdAt: new Date(todo.createdAt),
+                            updatedAt: new Date(todo.updatedAt)
+                        }));
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi đọc từ localStorage:', error);
+                }
+                return [];
+            }
+        }
+
+        // TodoManager
+        class TodoManager {
+            constructor() {
+                this.todos = TodoStorageService.loadTodos();
+                this.listeners = [];
+            }
+
+            subscribe(listener) {
+                this.listeners.push(listener);
+                return () => {
+                    const index = this.listeners.indexOf(listener);
+                    if (index > -1) {
+                        this.listeners.splice(index, 1);
+                    }
+                };
+            }
+
+            notifyListeners() {
+                this.listeners.forEach(listener => listener([...this.todos]));
+            }
+
+            generateId() {
+                return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+            }
+
+            saveAndNotify() {
+                TodoStorageService.saveTodos(this.todos);
+                this.notifyListeners();
+            }
+
+            addTodo(payload) {
+                const newTodo = {
+                    id: this.generateId(),
+                    title: payload.title.trim(),
+                    description: payload.description?.trim(),
+                    completed: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+
+                this.todos.push(newTodo);
+                this.saveAndNotify();
+                return newTodo;
+            }
+
+            toggleTodo(id) {
+                const todo = this.todos.find(t => t.id === id);
+                if (todo) {
+                    todo.completed = !todo.completed;
+                    todo.updatedAt = new Date();
+                    this.saveAndNotify();
+                    return true;
+                }
+                return false;
+            }
+
+            updateTodo(payload) {
+                const todo = this.todos.find(t => t.id === payload.id);
+                if (todo) {
+                    Object.assign(todo, payload.updates);
+                    todo.updatedAt = new Date();
+                    this.saveAndNotify();
+                    return true;
+                }
+                return false;
+            }
+
+            deleteTodo(id) {
+                const initialLength = this.todos.length;
+                this.todos = this.todos.filter(todo => todo.id !== id);
+                
+                if (this.todos.length !== initialLength) {
+                    this.saveAndNotify();
+                    return true;
+                }
+                return false;
+            }
+
+            getTodos(filter = 'all') {
+                switch (filter) {
+                    case 'completed':
+                        return this.todos.filter(todo => todo.completed);
+                    case 'active':
+                        return this.todos.filter(todo => !todo.completed);
+                    default:
+                        return [...this.todos];
+                }
+            }
+
+            getStats() {
+                const total = this.todos.length;
+                const completed = this.todos.filter(todo => todo.completed).length;
+                const active = total - completed;
+
+                return { total, completed, active };
+            }
+
+            markAllCompleted() {
+                let updatedCount = 0;
+                this.todos.forEach(todo => {
+                    if (!todo.completed) {
+                        todo.completed = true;
+                        todo.updatedAt = new Date();
+                        updatedCount++;
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    this.saveAndNotify();
+                }
+                return updatedCount;
+            }
+
+            clearCompleted() {
+                const initialLength = this.todos.length;
+                this.todos = this.todos.filter(todo => !todo.completed);
+                const deletedCount = initialLength - this.todos.length;
+
+                if (deletedCount > 0) {
+                    this.saveAndNotify();
+                }
+                return deletedCount;
+            }
+        }
+
+        // TodoItem Component
+        const TodoItem = ({ todo, onToggle, onUpdate, onDelete }) => {
+            const [isEditing, setIsEditing] = React.useState(false);
+            const [editTitle, setEditTitle] = React.useState(todo.title);
+            const [editDescription, setEditDescription] = React.useState(todo.description || '');
+
+            const handleToggle = () => {
+                onToggle(todo.id);
+            };
+
+            const handleDelete = () => {
+                if (confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
+                    onDelete(todo.id);
+                }
+            };
+
+            const handleEdit = () => {
+                setIsEditing(true);
+            };
+
+            const handleSave = () => {
+                if (editTitle.trim()) {
+                    onUpdate(todo.id, {
+                        title: editTitle.trim(),
+                        description: editDescription.trim() || undefined
+                    });
+                    setIsEditing(false);
+                } else {
+                    alert('Tiêu đề không được để trống!');
+                }
+            };
+
+            const handleCancel = () => {
+                setEditTitle(todo.title);
+                setEditDescription(todo.description || '');
+                setIsEditing(false);
+            };
+
+            if (isEditing) {
+                return (
+                    <div className="todo-item-editing">
+                        <div className="edit-form">
+                            <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="Tiêu đề công việc"
+                                className="edit-title-input"
+                            />
+                            <textarea
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                placeholder="Mô tả (tùy chọn)"
+                                className="edit-description-input"
+                                rows={3}
+                            />
+                            <div className="edit-actions">
+                                <button onClick={handleSave} className="save-btn">
+                                    Lưu
+                                </button>
+                                <button onClick={handleCancel} className="cancel-btn">
+                                    Hủy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+                    <div className="todo-content">
+                        <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={handleToggle}
+                            className="todo-checkbox"
+                        />
+                        
+                        <div className="todo-info">
+                            <h3 className={`todo-title ${todo.completed ? 'completed' : ''}`}>
+                                {todo.title}
+                            </h3>
+                            
+                            {todo.description && (
+                                <p className={`todo-description ${todo.completed ? 'completed' : ''}`}>
+                                    {todo.description}
+                                </p>
+                            )}
+                            
+                            <div className="todo-timestamps">
+                                <span className="created-time">
+                                    Tạo: {getRelativeTime(todo.createdAt)}
+                                </span>
+                                {todo.updatedAt.getTime() !== todo.createdAt.getTime() && (
+                                    <span className="updated-time">
+                                        Cập nhật: {getRelativeTime(todo.updatedAt)}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="todo-actions">
+                            <button onClick={handleEdit} className="edit-btn" title="Chỉnh sửa">
+                                ✏️
+                            </button>
+                            <button onClick={handleDelete} className="delete-btn" title="Xóa">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // TodoForm Component
+        const TodoForm = ({ onAddTodo }) => {
+            const [title, setTitle] = React.useState('');
+            const [description, setDescription] = React.useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                
+                if (!title.trim()) {
+                    alert('Vui lòng nhập tiêu đề công việc!');
+                    return;
+                }
+
+                onAddTodo(title.trim(), description.trim() || undefined);
+                
+                setTitle('');
+                setDescription('');
+            };
+
+            return (
+                <div className="todo-form-container">
+                    <h2 className="form-title">Thêm Công Việc Mới</h2>
+                    
+                    <form onSubmit={handleSubmit} className="todo-form">
+                        <div className="form-group">
+                            <label htmlFor="title" className="form-label">
+                                Tiêu đề <span className="required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Nhập tiêu đề công việc..."
+                                className="form-input title-input"
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="description" className="form-label">
+                                Mô tả <span className="optional">(tùy chọn)</span>
+                            </label>
+                            <textarea
+                                id="description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Nhập mô tả chi tiết..."
+                                className="form-input description-input"
+                                rows={3}
+                            />
+                        </div>
+
+                        <button type="submit" className="submit-btn">
+                            ➕ Thêm Công Việc
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        // TodoFilter Component
+        const TodoFilter = ({ currentFilter, stats, onFilterChange, onMarkAllCompleted, onClearCompleted }) => {
+            if (stats.total === 0) {
+                return null;
+            }
+
+            const handleMarkAllCompleted = () => {
+                if (stats.active > 0) {
+                    if (confirm(`Đánh dấu ${stats.active} công việc chưa hoàn thành là hoàn thành?`)) {
+                        onMarkAllCompleted();
+                    }
+                }
+            };
+
+            const handleClearCompleted = () => {
+                if (stats.completed > 0) {
+                    if (confirm(`Xóa ${stats.completed} công việc đã hoàn thành?`)) {
+                        onClearCompleted();
+                    }
+                }
+            };
+
+            return (
+                <div className="todo-filter-container">
+                    <div className="filter-stats">
+                        <div className="stat-item">
+                            <span className="stat-label">Tổng cộng:</span>
+                            <span className="stat-value">{stats.total}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Đã hoàn thành:</span>
+                            <span className="stat-value completed">{stats.completed}</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-label">Chưa hoàn thành:</span>
+                            <span className="stat-value active">{stats.active}</span>
+                        </div>
+                    </div>
+
+                    <div className="filter-buttons">
+                        <button
+                            onClick={() => onFilterChange('all')}
+                            className={`filter-btn ${currentFilter === 'all' ? 'active' : ''}`}
+                        >
+                            📋 Tất cả
+                        </button>
+                        <button
+                            onClick={() => onFilterChange('active')}
+                            className={`filter-btn ${currentFilter === 'active' ? 'active' : ''}`}
+                        >
+                            ⏳ Chưa hoàn thành
+                        </button>
+                        <button
+                            onClick={() => onFilterChange('completed')}
+                            className={`filter-btn ${currentFilter === 'completed' ? 'active' : ''}`}
+                        >
+                            ✅ Đã hoàn thành
+                        </button>
+                    </div>
+
+                    <div className="bulk-actions">
+                        {stats.active > 0 && (
+                            <button
+                                onClick={handleMarkAllCompleted}
+                                className="bulk-btn mark-all-btn"
+                            >
+                                ✅ Hoàn thành tất cả
+                            </button>
+                        )}
+                        
+                        {stats.completed > 0 && (
+                            <button
+                                onClick={handleClearCompleted}
+                                className="bulk-btn clear-completed-btn"
+                            >
+                                🗑️ Xóa đã hoàn thành
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // TodoList Component
+        const TodoList = ({ todos, onToggle, onUpdate, onDelete }) => {
+            if (todos.length === 0) {
+                return (
+                    <div className="todo-list-empty">
+                        <div className="empty-state">
+                            <div className="empty-icon">📝</div>
+                            <h3 className="empty-title">Chưa có công việc nào</h3>
+                            <p className="empty-description">
+                                Hãy thêm công việc đầu tiên của bạn để bắt đầu quản lý!
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="todo-list-container">
+                    <div className="todo-list">
+                        {todos.map((todo) => (
+                            <TodoItem
+                                key={todo.id}
+                                todo={todo}
+                                onToggle={onToggle}
+                                onUpdate={onUpdate}
+                                onDelete={onDelete}
+                            />
+                        ))}
+                    </div>
+                    
+                    <div className="todo-list-info">
+                        <span className="todo-count">
+                            Hiển thị {todos.length} công việc
+                        </span>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main TodoApp Component
+        const TodoApp = () => {
+            const [todos, setTodos] = React.useState([]);
+            const [currentFilter, setCurrentFilter] = React.useState('all');
+            const [filteredTodos, setFilteredTodos] = React.useState([]);
+
+            const todoManager = React.useMemo(() => new TodoManager(), []);
+
+            React.useEffect(() => {
+                const unsubscribe = todoManager.subscribe((newTodos) => {
+                    setTodos(newTodos);
+                });
+
+                return unsubscribe;
+            }, [todoManager]);
+
+            React.useEffect(() => {
+                const filtered = todoManager.getTodos(currentFilter);
+                setFilteredTodos(filtered);
+            }, [todos, currentFilter, todoManager]);
+
+            const handleAddTodo = (title, description) => {
+                todoManager.addTodo({ title, description });
+            };
+
+            const handleToggleTodo = (id) => {
+                todoManager.toggleTodo(id);
+            };
+
+            const handleUpdateTodo = (id, updates) => {
+                todoManager.updateTodo({ id, updates });
+            };
+
+            const handleDeleteTodo = (id) => {
+                todoManager.deleteTodo(id);
+            };
+
+            const handleFilterChange = (filter) => {
+                setCurrentFilter(filter);
+            };
+
+            const handleMarkAllCompleted = () => {
+                const updatedCount = todoManager.markAllCompleted();
+                if (updatedCount > 0) {
+                    alert(`Đã đánh dấu ${updatedCount} công việc là hoàn thành!`);
+                }
+            };
+
+            const handleClearCompleted = () => {
+                const deletedCount = todoManager.clearCompleted();
+                if (deletedCount > 0) {
+                    alert(`Đã xóa ${deletedCount} công việc đã hoàn thành!`);
+                }
+            };
+
+            const stats = todoManager.getStats();
+
+            return (
+                <div className="todo-app">
+                    <header className="app-header">
+                        <h1 className="app-title">📋 Quản Lý Công Việc</h1>
+                        <p className="app-subtitle">
+                            Tổ chức và theo dõi các công việc của bạn một cách hiệu quả
+                        </p>
+                    </header>
+
+                    <main className="app-main">
+                        <TodoForm onAddTodo={handleAddTodo} />
+
+                        <TodoFilter
+                            currentFilter={currentFilter}
+                            stats={stats}
+                            onFilterChange={handleFilterChange}
+                            onMarkAllCompleted={handleMarkAllCompleted}
+                            onClearCompleted={handleClearCompleted}
+                        />
+
+                        <TodoList
+                            todos={filteredTodos}
+                            onToggle={handleToggleTodo}
+                            onUpdate={handleUpdateTodo}
+                            onDelete={handleDeleteTodo}
+                        />
+                    </main>
+
+                    <footer className="app-footer">
+                        <p className="footer-text">
+                            💾 Dữ liệu được lưu tự động vào localStorage
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // Render ứng dụng
+        ReactDOM.render(<TodoApp />, document.getElementById('root'));
+    </script>
+</body>
+</html> 
