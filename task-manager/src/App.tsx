@@ -4,9 +4,11 @@ import type { RootState, AppDispatch } from './store';
 import { add, update, remove, toggle } from './store';
 import './App.css';
 
+type Priority = 'high' | 'medium' | 'low';
+
 const defaultForm = {
   title: '',
-  priority: 'medium' as 'high' | 'medium' | 'low',
+  priority: 'medium' as Priority,
   startDate: '',
   endDate: '',
   note: '',
@@ -18,18 +20,26 @@ const App: React.FC = () => {
 
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [filter, setFilter] = useState<'all' | Priority>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
   const [search, setSearch] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<any>) =>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleAddOrUpdate = () => {
-    if (!form.title || !form.startDate || !form.endDate) return alert('Vui lòng điền đầy đủ thông tin!');
-    editingId
-      ? dispatch(update({ id: editingId, completed: false, ...form }))
-      : dispatch(add(form));
+    if (!form.title || !form.startDate || !form.endDate) {
+      alert('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
+
+    if (editingId) {
+      dispatch(update({ id: editingId, completed: false, ...form }));
+    } else {
+      dispatch(add(form));
+    }
+
     setForm(defaultForm);
     setEditingId(null);
   };
@@ -37,14 +47,24 @@ const App: React.FC = () => {
   const handleEdit = (id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-    setForm({ title: task.title, priority: task.priority, startDate: task.startDate, endDate: task.endDate, note: task.note });
+
+    setForm({
+      title: task.title,
+      priority: task.priority,
+      startDate: task.startDate,
+      endDate: task.endDate,
+      note: task.note ?? '',
+    });
+
     setEditingId(id);
   };
 
-  const filteredTasks = tasks.filter(t =>
-    (filter === 'all' || t.priority === filter) &&
-    (statusFilter === 'all' || (statusFilter === 'completed' && t.completed) || (statusFilter === 'incomplete' && !t.completed)) &&
-    t.title.toLowerCase().includes(search.toLowerCase())
+  const filteredTasks = tasks.filter(task =>
+    (filter === 'all' || task.priority === filter) &&
+    (statusFilter === 'all' ||
+      (statusFilter === 'completed' && task.completed) ||
+      (statusFilter === 'incomplete' && !task.completed)) &&
+    task.title.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -53,21 +73,43 @@ const App: React.FC = () => {
         <h2>Quản Lý Công Việc</h2>
 
         <div className="task-form">
-          <input name="title" value={form.title} onChange={handleChange} placeholder="Tên công việc" />
+          <input
+            name="title"
+            value={form.title}
+            onChange={handleChange}
+            placeholder="Tên công việc"
+          />
           <select name="priority" value={form.priority} onChange={handleChange}>
             <option value="high">Cao</option>
             <option value="medium">Trung bình</option>
             <option value="low">Thấp</option>
           </select>
-          <input type="date" name="startDate" value={form.startDate} onChange={handleChange} />
-          <input type="date" name="endDate" value={form.endDate} onChange={handleChange} />
-          <textarea name="note" value={form.note} onChange={handleChange} placeholder="Ghi chú" />
-          <button onClick={handleAddOrUpdate}>{editingId ? 'Lưu' : 'Thêm công việc'}</button>
+          <input
+            type="date"
+            name="startDate"
+            value={form.startDate}
+            onChange={handleChange}
+          />
+          <input
+            type="date"
+            name="endDate"
+            value={form.endDate}
+            onChange={handleChange}
+          />
+          <textarea
+            name="note"
+            value={form.note}
+            onChange={handleChange}
+            placeholder="Ghi chú"
+          />
+          <button onClick={handleAddOrUpdate}>
+            {editingId ? 'Lưu' : 'Thêm công việc'}
+          </button>
         </div>
 
         <div className="task-filter">
           <label>Lọc theo độ ưu tiên: </label>
-          <select value={filter} onChange={e => setFilter(e.target.value as any)}>
+          <select value={filter} onChange={e => setFilter(e.target.value as Priority | 'all')}>
             <option value="all">Tất cả</option>
             <option value="high">Cao</option>
             <option value="medium">Trung bình</option>
@@ -77,7 +119,10 @@ const App: React.FC = () => {
 
         <div className="task-filter">
           <label>Lọc theo trạng thái: </label>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value as 'all' | 'completed' | 'incomplete')}
+          >
             <option value="all">Tất cả</option>
             <option value="completed">Đã hoàn thành</option>
             <option value="incomplete">Chưa hoàn thành</option>
