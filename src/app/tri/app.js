@@ -19,19 +19,19 @@ let editingId = null;
 const addTask = () => {
   const priority = document.getElementById("taskPriority").value;
   const title = document.getElementById("taskTitle").value;
-  const name = document.getElementById("taskName").value;
+  const description = document.getElementById("taskDescription").value;
   const dayStarted = document.getElementById("dayStarted").value;
   const dayExpired = document.getElementById("dayExpired").value;
   const status = document.getElementById("taskStatus").value;
 
-  if (!title.trim() || !name.trim() || !dayStarted || !dayExpired) {
+  if (!title.trim() || !description.trim() || !dayStarted || !dayExpired) {
     alert("Vui lòng nhập đầy đủ thông tin.");
     return;
   }
 
-  const task = new Task(currentId++, priority, title, name, dayStarted, dayExpired, status);
+  const task = new Task(currentId++, priority, title, description, dayStarted, dayExpired, status);
   taskMap.set(task.id, task);
-  saveTasksToStorage();
+ saveTasksToStorage();
   clearInputs();
   renderTasks(taskMap);
 };
@@ -52,17 +52,17 @@ const editTask = id => {
 };
 
 // ✅ Xác nhận chỉnh sửa
-const confirmEdit = id => {
+  const confirmEdit = id => {
   const newPriority = document.getElementById(`editPriority-${id}`).value;
   const newTitle = document.getElementById(`editTitle-${id}`).value;
-  const newName = document.getElementById(`editName-${id}`).value;
+  const newName = document.getElementById(`editName-${id}`).value;  
   const newStart = document.getElementById(`editStart-${id}`).value;
   const newEnd = document.getElementById(`editEnd-${id}`).value;
   const newStatus = document.getElementById(`editStatus-${id}`).value;
 
   const updatedTask = new Task(id, newPriority, newTitle, newName, newStart, newEnd, newStatus);
   taskMap.set(id, updatedTask);
-  saveTasksToStorage();
+ saveTasksToStorage();
   editingId = null;
   renderTasks(taskMap);
 };
@@ -121,8 +121,8 @@ const renderTasks = taskList => {
           </select>
         </td>
         <td>
-          <button onclick="confirmEdit(${id})">✅</button>
-          <button onclick="cancelEdit()">❌</button>
+          <button onclick="confirmEdit(${id})">Sửa</button>
+          <button onclick="cancelEdit()">Hủy</button>
         </td>
       `;
     } else {
@@ -149,7 +149,7 @@ const renderTasks = taskList => {
 const clearInputs = () => {
   document.getElementById("taskPriority").value = "Medium";
   document.getElementById("taskTitle").value = "";
-  document.getElementById("taskName").value = "";
+  document.getElementById("taskDescription").value = "";
   document.getElementById("dayStarted").value = "";
   document.getElementById("dayExpired").value = "";
   document.getElementById("taskStatus").value = "Pending";
@@ -163,25 +163,27 @@ const saveTasksToStorage = () => {
 
 // ✅ Tải dữ liệu từ localStorage
 const loadTasksFromStorage = () => {
-  const data = localStorage.getItem("tasks");
-  if (data) {
-    const parsed = JSON.parse(data);
-    for (const [id, taskData] of parsed) {
-      const task = new Task(
-        taskData.id,
-        taskData.priority,
-        taskData.title,
-        taskData.description,
-        taskData.dayStarted,
-        taskData.dayExpired,
-        taskData.status
-      );
-      taskMap.set(task.id, task);
-      currentId = Math.max(currentId, task.id + 1);
-    }
-    renderTasks(taskMap);
-  }
-};
+const data = localStorage.getItem("tasks"); // ✅ FIX ở đây
+  if (!data) return;
+ const parsed = JSON.parse(data);
+for (const item of parsed) {
+  const id = Number(item[0]); // 🔧 chuyển lại về số
+  const taskData = item[1];   // là object
+  const task = new Task(
+    id,
+    taskData.priority,
+    taskData.title,
+    taskData.description,
+    taskData.dayStarted,
+    taskData.dayExpired,
+    taskData.status
+  );
+  taskMap.set(id, task);
+  currentId = Math.max(currentId, id + 1);
+}
+  renderTasks(taskMap);
+parsed.forEach(item => console.log("Item:", item, "ID from item[0]:", item[0]));
+  };
 
 // ✅ Gắn sự kiện sau khi DOM đã sẵn sàng
 document.addEventListener("DOMContentLoaded", () => {
