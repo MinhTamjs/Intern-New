@@ -2,11 +2,11 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Quản Lý Công Việc</title>
+  <title>Work Management</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Quản Lý Công Việc</h1>
+  <h1>Work Management</h1>
  <div>
    <select id="taskPriority">
     <option value="High">High</option>
@@ -27,12 +27,25 @@
 
   <input type="text" id="filter" placeholder="Lọc theo tên...">
   <button id="filterBtn">Filter</button>
- 
- 
+
+  <select id="taskFilterStatus">
+    <option value="Pending">Pending</option>
+    <option value="In Progress">In Progress</option>
+    <option value="Done">Done</option>
+    <option value="Expired">Expired</option>
+    </select>
+  <button id="FilterStatusBtn">Filter</button>
+
+  <select id="taskFilterPriority">
+    <option value="High">High</option>
+    <option value="Medium">Medium</option>
+    <option value="Low">Low</option>
+    </select>
+  <button id="FilterPrioritybtn">Filter</button>
 </div>
 
 <div>
- <h2>Danh sách công việc</h2>
+ <h2>Task List</h2>
   <table>
     <thead>
       <tr>

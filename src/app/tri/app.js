@@ -45,6 +45,7 @@ const deleteTask = id => {
   }
 };
 
+
 // ✅ Bắt đầu sửa task
 const editTask = id => {
   editingId = id;
@@ -89,6 +90,46 @@ const filterTask = () => {
 
   renderTasks(filtered);
 };
+
+// ✅ Lọc theo trạng thái
+const filterByStatus = () => {
+  const selectedStatus = document.getElementById("taskFilterStatus").value;
+  const filtered = new Map();
+
+  for (const [id, task] of taskMap) {
+    if (task.status === selectedStatus) {
+      filtered.set(id, task);
+    }
+  }
+
+  renderTasks(filtered);
+};
+
+// ✅ Lọc theo độ ưu tiên
+const filterByPriority = () => {
+  const selectedPriority = document.getElementById("taskFilterPriority").value;
+  const filtered = new Map();
+
+  for (const [id, task] of taskMap) {
+    if (task.priority === selectedPriority) {
+      filtered.set(id, task);
+    }
+  }
+
+  renderTasks(filtered);
+};
+
+// đánh dấu hoàn thành
+const markAsDone = (id) => {
+  const task = taskMap.get(id);
+  if (task && task.status !== "Done") {
+    task.status = "Done";
+    taskMap.set(id, task);
+    saveTasksToStorage();
+    renderTasks(taskMap);
+  }
+};
+
 
 // ✅ Hiển thị danh sách công việc trong bảng
 const renderTasks = taskList => {
@@ -137,6 +178,11 @@ const renderTasks = taskList => {
         <td>
           <button class="edit-btn" onclick="editTask(${id})">Sửa</button>
           <button class="delete-btn" onclick="deleteTask(${id})">Xoá</button>
+          ${
+            task.status !== "Done"
+             ? `<button class="done-btn" onclick="markAsDone(${id})">Done</button>`
+              : ""
+          }
         </td>
       `;
     }
@@ -190,4 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
   loadTasksFromStorage();
   document.getElementById("addBtn").addEventListener("click", addTask);
   document.getElementById("filterBtn").addEventListener("click", filterTask);
+  document.getElementById("FilterStatusBtn").addEventListener("click", filterByStatus);
+  document.getElementById("FilterPrioritybtn").addEventListener("click", filterByPriority); 
 });

@@ -104,3 +104,30 @@ td.status-expired {
 .delete-btn:hover {
   background-color: #4e0b03;
 }
+td.priority-high {
+  color: red;
+  font-weight: bold;
+}
+
+td.priority-medium {
+  color: orange;
+  font-weight: bold;
+}
+
+td.priority-low {
+  color: green;
+  font-weight: bold;
+}
+.done-btn {
+  background-color: #198754;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: 4px;
+  cursor: pointer;
+}
+.done-btn:hover {
+  background-color: #146c43;
+}
