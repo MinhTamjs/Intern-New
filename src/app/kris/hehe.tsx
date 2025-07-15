@@ -5,7 +5,7 @@ function Counter() {
   const count = useSelector((state: any) => state.counter.value);
   const dispatch = useDispatch();
 
-  return (
+  return ( 
     <div>
       <button onClick={() => dispatch(decrement())}>-</button>
       <span>{count}</span>
