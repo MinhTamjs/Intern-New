@@ -1,133 +1,125 @@
-
-    body {
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  margin: 30px;
-  text-align: center;
-  color: #333;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%);
+  min-height: 100vh;
 }
 
-h1, h2 {
-  color: #2c3e50;
+.app-container, .MuiContainer-root {
+  background: #ffffffcc;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.08);
+  padding: 32px 16px 24px 16px;
+  margin: 32px auto;
+  max-width: 900px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
 }
 
-input, select, button {
-  padding: 8px 12px;
-  margin: 6px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+.MuiPaper-root {
+  border-radius: 14px !important;
+  box-shadow: 0 2px 12px 0 rgba(0,128,128,0.08) !important;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
 }
 
-input[type="date"] {
-  width: 160px;
-}
-
-button {
-  cursor: pointer;
-  background-color: #113750;
-  color: white;
+.MuiButton-root, .custom-btn {
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  color: #fff;
+  font-weight: 600;
   border: none;
-  transition: background-color 0.3s;
+  border-radius: 8px;
+  padding: 8px 20px;
+  margin: 0 4px;
+  box-shadow: 0 2px 8px 0 rgba(67,233,123,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+}
+.MuiButton-root:hover, .custom-btn:hover {
+  background: linear-gradient(90deg, #38f9d7 0%, #43e97b 100%);
+  box-shadow: 0 4px 16px 0 rgba(56,249,215,0.15);
 }
 
-button:hover {
-  background-color: #0c324a;
+.MuiChip-root {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
 }
 
-/* TABLE */
-table {
-  border-collapse: collapse;
-  table-layout: fixed;
-  width: 100%;
-}
-th, td {
-  padding: 8px;
-  border: 1px solid #ccc;
-  text-align: center;
-  word-wrap: break-word;
+.MuiTableCell-head {
+  background: #e0f2f1;
+  color: #111;
+  font-weight: bold !important;
+  font-size: 1.05rem;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  text-shadow: 0 1px 6px #fff, 0 1px 6px #b2dfdb44;
 }
 
-
-th {
-  background-color: #f0f0f0;
-  color: #333;
+.MuiTableCell-root {
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
+  text-shadow: 0 1px 6px #fff, 0 1px 6px #b2dfdb22;
 }
 
-tr:hover {
-  background-color: #f9f9f9;
+.MuiTableRow-root.selected {
+  background: #b2dfdb44 !important;
 }
 
-/* STATUS COLORS */
-td.status-pending {
-  color: rgb(86, 81, 72);
-  font-weight: bold;
+.MuiTextField-root {
+  background: #f8fffc;
+  border-radius: 6px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
 }
 
-td.status-inprogress {
-  color: rgb(119, 255, 0);
-  font-weight: bold;
+.MuiTypography-h4 {
+  color: #009688;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  text-shadow: 0 2px 8px #fff, 0 2px 8px #b2dfdb44;
 }
 
-td.status-done {
-  color: rgb(3, 57, 3);
-  font-weight: bold;
-}
-td.status-expired {
-      color: red;
-      font-weight: bold;
-      text-shadow: #aaa;
-    }
-
-/* ACTION BUTTONS in table */
-.action-btn {
-  padding: 4px 8px;
-  font-size: 12px;
-  margin: 0 2px;
-  border: none;
-  border-radius: 4px;
-  color: white;
+/* Custom English button text (override if needed) */
+button, .MuiButton-root {
+  text-transform: none !important;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
 }
 
-.edit-btn {
-  background-color: #152f59;
+/* Đậm và làm đẹp label cho toàn bộ TextField, combo box, date box */
+.MuiFormLabel-root {
+  font-weight: 700 !important;
+  color: #009688 !important;
+  font-size: 1.08rem !important;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 6px #b2dfdb44, 0 1px 6px #fff;
+  text-transform: capitalize;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
 }
 
-.edit-btn:hover {
-  background-color: #16046d;
+/* Đậm label khi focus */
+.Mui-focused .MuiFormLabel-root {
+  color: #43e97b !important;
+  text-shadow: 0 2px 8px #43e97b33, 0 2px 8px #fff;
 }
 
-.delete-btn {
-  background-color: #cc301f;
+/* Đậm label khi error */
+.Mui-error .MuiFormLabel-root {
+  color: #d32f2f !important;
 }
 
-.delete-btn:hover {
-  background-color: #4e0b03;
-}
-td.priority-high {
-  color: red;
-  font-weight: bold;
-}
-
-td.priority-medium {
-  color: orange;
-  font-weight: bold;
-}
-
-td.priority-low {
-  color: green;
-  font-weight: bold;
-}
-.done-btn {
-  background-color: #198754;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  margin-left: 4px;
-  cursor: pointer;
-}
-.done-btn:hover {
-  background-color: #146c43;
-}
+/* Responsive */
+@media (max-width: 600px) {
+  .app-container, .MuiContainer-root {
+    padding: 8px 2px 8px 2px;
+    margin: 8px auto;
+  }
+  .MuiTableCell-root, .MuiTableCell-head {
+    font-size: 0.95rem;
+    padding: 4px 2px;
+  }
+  .MuiFormLabel-root {
+    font-size: 1rem !important;
+  }
+} 
