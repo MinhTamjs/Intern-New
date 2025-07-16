@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, type ChangeEvent } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from './store';
-import { add, update, remove, toggle } from './store';
+import { update, remove, toggle, addTaskAsync } from './store'; // Sửa import ở đây
 import './App.css';
 
 type Priority = 'high' | 'medium' | 'low';
+type Status = 'all' | 'completed' | 'incomplete';
+type Filter = 'all' | Priority;
 
 const defaultForm = {
   title: '',
@@ -15,56 +17,57 @@ const defaultForm = {
 };
 
 const App: React.FC = () => {
-  const tasks = useSelector((state: RootState) => state.tasks.tasks);
+  // Lấy cả tasks, status và error từ store
+  const { tasks, status, error } = useSelector((s: RootState) => s.tasks);
   const dispatch = useDispatch<AppDispatch>();
 
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | Priority>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<Filter>('all');
+  const [statusFilter, setStatusFilter] = useState<Status>('all');
   const [search, setSearch] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const onChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
-  const handleAddOrUpdate = () => {
-    if (!form.title || !form.startDate || !form.endDate) {
+  // Đổi hàm saveTask thành async
+  const saveTask = async () => {
+    const { title, startDate, endDate } = form;
+    if (!title || !startDate || !endDate) {
       alert('Vui lòng điền đầy đủ thông tin!');
       return;
     }
 
     if (editingId) {
+      // Đối với việc cập nhật, vẫn dùng action update thông thường
       dispatch(update({ id: editingId, completed: false, ...form }));
     } else {
-      dispatch(add(form));
+      // Dòng này đã được sửa để dispatch addTaskAsync
+      await dispatch(addTaskAsync(form));
     }
 
     setForm(defaultForm);
     setEditingId(null);
   };
 
-  const handleEdit = (id: string) => {
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-
-    setForm({
-      title: task.title,
-      priority: task.priority,
-      startDate: task.startDate,
-      endDate: task.endDate,
-      note: task.note ?? '',
-    });
-
+  const editTask = (id: string) => {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    setForm({ ...t, note: t.note ?? '' });
     setEditingId(id);
   };
 
-  const filteredTasks = tasks.filter(task =>
-    (filter === 'all' || task.priority === filter) &&
-    (statusFilter === 'all' ||
-      (statusFilter === 'completed' && task.completed) ||
-      (statusFilter === 'incomplete' && !task.completed)) &&
-    task.title.toLowerCase().includes(search.toLowerCase())
+  const filteredTasks = useMemo(
+    () =>
+      tasks.filter(
+        t =>
+          (priorityFilter === 'all' || t.priority === priorityFilter) &&
+          (statusFilter === 'all' ||
+            (statusFilter === 'completed' && t.completed) ||
+            (statusFilter === 'incomplete' && !t.completed)) &&
+          t.title.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [tasks, priorityFilter, statusFilter, search],
   );
 
   return (
@@ -72,44 +75,29 @@ const App: React.FC = () => {
       <div className="container">
         <h2>Quản Lý Công Việc</h2>
 
+        {/* Form */}
         <div className="task-form">
-          <input
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            placeholder="Tên công việc"
-          />
-          <select name="priority" value={form.priority} onChange={handleChange}>
-            <option value="high">Cao</option>
-            <option value="medium">Trung bình</option>
-            <option value="low">Thấp</option>
+          <input name="title" value={form.title} onChange={onChange} placeholder="Tên công việc" />
+          <select name="priority" value={form.priority} onChange={onChange}>
+            {(['high', 'medium', 'low'] as Priority[]).map(p => (
+              <option key={p} value={p}>
+                {p === 'high' ? 'Cao' : p === 'medium' ? 'Trung bình' : 'Thấp'}
+              </option>
+            ))}
           </select>
-          <input
-            type="date"
-            name="startDate"
-            value={form.startDate}
-            onChange={handleChange}
-          />
-          <input
-            type="date"
-            name="endDate"
-            value={form.endDate}
-            onChange={handleChange}
-          />
-          <textarea
-            name="note"
-            value={form.note}
-            onChange={handleChange}
-            placeholder="Ghi chú"
-          />
-          <button onClick={handleAddOrUpdate}>
-            {editingId ? 'Lưu' : 'Thêm công việc'}
+          <input type="date" name="startDate" value={form.startDate} onChange={onChange} />
+          <input type="date" name="endDate" value={form.endDate} onChange={onChange} />
+          <textarea name="note" value={form.note} onChange={onChange} placeholder="Ghi chú" />
+          <button onClick={saveTask} disabled={status === 'loading'}>
+            {status === 'loading' ? 'Đang thêm...' : (editingId ? 'Lưu' : 'Thêm công việc')}
           </button>
+          {status === 'failed' && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
         </div>
 
+        {/* Filters */}
         <div className="task-filter">
           <label>Lọc theo độ ưu tiên: </label>
-          <select value={filter} onChange={e => setFilter(e.target.value as Priority | 'all')}>
+          <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value as Filter)}>
             <option value="all">Tất cả</option>
             <option value="high">Cao</option>
             <option value="medium">Trung bình</option>
@@ -119,10 +107,7 @@ const App: React.FC = () => {
 
         <div className="task-filter">
           <label>Lọc theo trạng thái: </label>
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value as 'all' | 'completed' | 'incomplete')}
-          >
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as Status)}>
             <option value="all">Tất cả</option>
             <option value="completed">Đã hoàn thành</option>
             <option value="incomplete">Chưa hoàn thành</option>
@@ -133,29 +118,24 @@ const App: React.FC = () => {
           placeholder="Tìm kiếm theo tên..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: '100%', marginBottom: '1rem', padding: '8px' }}
+          style={{ width: '100%', marginBottom: '1rem', padding: 8 }}
         />
 
+        {/* Task list */}
         <ul className="task-list">
-          {filteredTasks.map(task => (
-            <li key={task.id} className={`task-item ${task.priority}`}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="checkbox"
-                  checked={!!task.completed}
-                  onChange={() => dispatch(toggle(task.id))}
-                />
-                <strong style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>
-                  {task.title}
-                </strong>
+          {filteredTasks.map(t => (
+            <li key={t.id} className={`task-item ${t.priority}`}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="checkbox" checked={!!t.completed} onChange={() => dispatch(toggle(t.id))} />
+                <strong style={{ textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</strong>
               </label>
-              <em> ({task.priority})</em>
-              <div>Bắt đầu: {task.startDate}</div>
-              <div>Kết thúc: {task.endDate}</div>
-              <div>Ghi chú: {task.note || 'Không có'}</div>
+              <em> ({t.priority})</em>
+              <div>Bắt đầu: {t.startDate}</div>
+              <div>Kết thúc: {t.endDate}</div>
+              <div>Ghi chú: {t.note || 'Không có'}</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button onClick={() => handleEdit(task.id)}>Sửa</button>
-                <button onClick={() => dispatch(remove(task.id))}>Xoá</button>
+                <button onClick={() => editTask(t.id)}>Sửa</button>
+                <button onClick={() => dispatch(remove(t.id))}>Xoá</button>
               </div>
             </li>
           ))}
