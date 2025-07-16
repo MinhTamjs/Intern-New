@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quản Lý Công Việc</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>📝 Quản Lý Công Việc</h1>
+
+  <div class="form-group">
+    <input type="text" id="taskTitle" placeholder="Nhập tiêu đề công việc..." />
+    <select id="taskPriority">
+      <option value="high">High 🔥</option>
+      <option value="medium" selected>Medium ⚖️</option>
+      <option value="low">Low 🌱</option>
+    </select>
+    <button id="addTaskBtn">Thêm</button>
+  </div>
+
+  <div class="filters">
+    <label for="filterPriority">Ưu tiên:</label>
+    <select id="filterPriority">
+      <option value="all">Tất cả</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+
+    <label for="statusFilter">Trạng thái:</label>
+    <select id="statusFilter">
+      <option value="all">Tất cả</option>
+      <option value="completed">Đã hoàn thành</option>
+      <option value="incomplete">Chưa hoàn thành</option>
+    </select>
+  </div>
+
+  <div id="taskList" class="task-list"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
