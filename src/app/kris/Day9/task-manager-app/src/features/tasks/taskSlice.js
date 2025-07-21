@@ -23,7 +23,9 @@ export const updateTaskAsync = createAsyncThunk('tasks/updateTask', async ({ id,
 });
 
 export const deleteTaskAsync = createAsyncThunk('tasks/deleteTask', async (id) => {
-  return await deleteTask(id);
+  const response = await deleteTask(id);
+  // Nếu response là object có id, trả về response.id, nếu không thì trả về id truyền vào
+  return (response && response.id) ? response.id : id;
 });
 
 const taskSlice = createSlice({
@@ -55,11 +57,11 @@ const taskSlice = createSlice({
       })
       .addCase(updateTaskAsync.fulfilled, (state, action) => {
         const { id, updatedTask } = action.payload;
-        const index = state.tasks.findIndex(task => task._id === id);
+        const index = state.tasks.findIndex(task => task.id === id);
         if (index !== -1) state.tasks[index] = { ...state.tasks[index], ...updatedTask };
       })
       .addCase(deleteTaskAsync.fulfilled, (state, action) => {
-        state.tasks = state.tasks.filter(task => task._id !== action.payload);
+        state.tasks = state.tasks.filter(task => task.id !== action.payload);
       });
   },
 });

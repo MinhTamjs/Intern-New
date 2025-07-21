@@ -36,7 +36,7 @@ const TaskForm = () => {
   };
 
   return (
-    <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 3 }}>
+    <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 3, p: 3, minWidth: 500, display: 'flex', justifyContent: 'center' }}>
       <CardContent>
         <Typography variant="h6" fontWeight={700} gutterBottom>
           + Thêm Công Việc Mới
@@ -54,12 +54,14 @@ const TaskForm = () => {
               />
             </Grid>
             <Grid gridColumn="span 3">
-              <FormControl fullWidth required>
-                <InputLabel>Mức độ ưu tiên</InputLabel>
+              <FormControl fullWidth required sx={{ minWidth: 180 }}>
+                <InputLabel id="priority-label">Mức độ ưu tiên</InputLabel>
                 <Select
+                  labelId="priority-label"
                   value={priority}
                   label="Mức độ ưu tiên"
                   onChange={(e) => setPriority(e.target.value)}
+                  sx={{ minWidth: 180 }}
                 >
                   {PRIORITY_OPTIONS.map(opt => (
                     <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>

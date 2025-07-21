@@ -13,6 +13,12 @@ const PRIORITY_LABELS = {
   low: { label: 'Thấp (Low)', color: 'success', icon: <LowPriority fontSize="small" /> },
 };
 
+// Hàm chuyển đổi thứ tiếng Anh sang tiếng Việt
+function formatVietnameseDate(dateStr) {
+  const d = dayjs(dateStr);
+  return d.format('DD/MM/YY');
+}
+
 const TaskList = () => {
   const { tasks, status, error } = useSelector((state) => state.tasks);
   const dispatch = useDispatch();
@@ -48,11 +54,22 @@ const TaskList = () => {
   }, [tasks]);
 
   const handleToggle = (task) => {
-    dispatch(updateTaskAsync({ id: task._id, updatedTask: { ...task, completed: !task.completed } }));
+    dispatch(updateTaskAsync({ id: task.id, updatedTask: { ...task, completed: !task.completed } }));
   };
 
   const handleDelete = (id) => {
     dispatch(deleteTaskAsync(id));
+  };
+
+  const handleDeleteAll = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ công việc?')) {
+      for (const task of tasks) {
+        if (task.id) {
+          await dispatch(deleteTaskAsync(task.id));
+        }
+      }
+      dispatch(fetchTasks());
+    }
   };
 
   if (status === 'loading') return <Typography>Loading...</Typography>;
@@ -61,18 +78,12 @@ const TaskList = () => {
   return (
     <>
       {/* Filter & Search */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
+      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2, p: 3, minWidth: 700, display: 'flex', justifyContent: 'center', width: '30vw', margin: '1 auto' }}>
         <CardContent>
           <Typography variant="h6" fontWeight={700} gutterBottom>🔎 Tìm Kiếm & Lọc</Typography>
           <Grid container spacing={2} alignItems="center">
             <Grid gridColumn="span 5">
-              <TextField
-                label="Tìm kiếm theo tên"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                fullWidth
-                variant="outlined"
-              />
+              <TextField label="Tìm kiếm theo tên" value={search} onChange={e => setSearch(e.target.value)} fullWidth variant="outlined" />
             </Grid>
             <Grid gridColumn="span 3">
               <FormControl fullWidth>
@@ -100,6 +111,16 @@ const TaskList = () => {
                 fullWidth
               >
                 Xóa Bộ Lọc
+              </Button>
+            </Grid>
+            <Grid gridColumn="span 2">
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleDeleteAll}
+                fullWidth
+              >
+                Xóa Tất Cả
               </Button>
             </Grid>
           </Grid>
@@ -135,7 +156,7 @@ const TaskList = () => {
       </Grid>
 
       {/* Task List */}
-      <Card sx={{ borderRadius: 3, boxShadow: 3, borderLeft: '6px solid #1976d2', mb: 2 }}>
+      <Card sx={{ borderRadius: 10, boxShadow: 1, borderLeft: '10px solid #1976d2', mb: 5, p: 9, display: 'flex', justifyContent: 'center', width: '100%', minWidth: 0, maxWidth: 'none', pt: 10 }}>
         <CardContent>
           <Typography variant="h6" fontWeight={700} gutterBottom>📝 Danh Sách Công Việc</Typography>
           <Divider sx={{ mb: 2 }} />
@@ -143,71 +164,90 @@ const TaskList = () => {
             {filteredTasks.length === 0 && (
               <Typography color="text.secondary">Không có công việc nào phù hợp.</Typography>
             )}
-            {filteredTasks.map((task) => {
+            {filteredTasks.filter(task => !!task.id).length === 0 && filteredTasks.length > 0 && (
+              <Typography color="text.secondary">Dữ liệu task không hợp lệ (thiếu id).</Typography>
+            )}
+            {filteredTasks.filter(task => !!task.id).map((task, idx) => {
               const isOverdue = !task.completed && dayjs(task.endDate).isBefore(dayjs(), 'day');
               return (
-                <Paper
-                  key={task._id}
-                  elevation={4}
+                <Paper key={task.id || idx} elevation={4}
                   sx={{
-                    p: 2,
+                    p: 1.5,
+                    minHeight: 120,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     borderLeft: `6px solid ${
                       task.priority === 'high' ? '#d32f2f' : task.priority === 'medium' ? '#fbc02d' : '#388e3c'
                     }`,
                     background: task.completed ? '#f0f4c3' : '#fff',
                     transition: 'box-shadow 0.2s, transform 0.2s',
-                    '&:hover': { boxShadow: 8, transform: 'scale(1.01)' },
+                    width: '100%',
+                    margin: 0,
+                    marginBottom: '50px',
                   }}
                 >
-                  <Grid container alignItems="center" spacing={2} columns={12}>
-                    <Grid gridColumn="span 8">
-                      <Typography variant="h6" sx={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'gray' : 'inherit' }}>
-                        {task.title}
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', p: 2 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontSize: 18,
+                        textDecoration: task.completed ? 'line-through' : 'none',
+                        color: task.completed ? 'gray' : 'inherit',
+                        mr: 4,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flexGrow: 1,
+                      }}
+                      title={task.title}
+                    >
+                      {task.title}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 2, justifyContent: 'flex-end' }}>
+                      <Chip
+                        label={(() => {
+                          if (task.priority === 'high') return 'Cao';
+                          if (task.priority === 'medium') return 'Trung bình';
+                          if (task.priority === 'low') return 'Thấp';
+                          return 'Không rõ';
+                        })()}
+                        color={PRIORITY_LABELS[task.priority]?.color || 'default'}
+                        size="medium"
+                        sx={{ fontSize: 14, height: 32 }}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 14, textAlign: 'right', minWidth: 120 }}>
+                        Hạn chót: {formatVietnameseDate(task.endDate)}
                       </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center" mt={1}>
-                        <Chip
-                          label={PRIORITY_LABELS[task.priority]?.label || 'Không rõ'}
-                          color={PRIORITY_LABELS[task.priority]?.color || 'default'}
-                          icon={PRIORITY_LABELS[task.priority]?.icon}
-                          size="small"
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          Hạn chót: {dayjs(task.endDate).format('dddd, DD [tháng] MM, YYYY')}
-                        </Typography>
-                        {isOverdue && (
-                          <Chip label="Quá hạn" color="error" size="small" sx={{ fontWeight: 700 }} />
-                        )}
-                        <Typography variant="body2" color={task.completed ? 'success.main' : 'warning.main'}>
-                          Trạng thái: {task.completed ? <><CheckCircle fontSize="small" color="success" /> Đã hoàn thành</> : <><HourglassEmpty fontSize="small" color="warning" /> Chưa hoàn thành</>}
-                        </Typography>
-                      </Stack>
-                    </Grid>
-                    <Grid gridColumn="span 2">
+                    </Box>
+                    {isOverdue && (
+                      null
+                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 3, gap: 2 }}>
                       <Tooltip title={task.completed ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}>
                         <Checkbox
                           checked={task.completed}
                           onChange={() => handleToggle(task)}
                           color="success"
-                          sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
+                          sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }}
                         />
                       </Tooltip>
-                    </Grid>
-                    <Grid gridColumn="span 2">
-                      <Stack direction="row" spacing={1}>
-                        {/* Nút Sửa có thể mở modal chỉnh sửa nếu muốn mở rộng */}
-                        {/* <Button variant="outlined" color="warning" startIcon={<Edit />}>Sửa</Button> */}
-                        <Button
-                          variant="contained"
-                          color="error"
-                          startIcon={<Delete />}
-                          onClick={() => handleDelete(task._id)}
-                          sx={{ fontWeight: 700, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.08)' } }}
-                        >
-                          Xóa
-                        </Button>
-                      </Stack>
-                    </Grid>
-                  </Grid>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        startIcon={<Delete />}
+                        onClick={() => handleDelete(task.id)}
+                        sx={{ fontWeight: 700, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.08)' } }}
+                      >
+                        Xóa
+                      </Button>
+                    </Box>
+                  </Box>
+                  {isOverdue && (
+                    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
+                      <Chip label="Quá hạn" color="error" size="small" sx={{ fontWeight: 700 }} />
+                    </Box>
+                  )}
                 </Paper>
               );
             })}
