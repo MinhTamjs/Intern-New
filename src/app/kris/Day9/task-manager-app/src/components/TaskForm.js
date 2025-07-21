@@ -36,13 +36,15 @@ const TaskForm = () => {
   };
 
   return (
-    <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 3, p: 3, minWidth: 500, display: 'flex', justifyContent: 'center' }}>
-      <CardContent>
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          + Thêm Công Việc Mới
-        </Typography>
+    <Card sx={{ mb: 4, borderRadius: 0, boxShadow: 2, p: 0.2, maxWidth: 1000, display: 'flex', justifyContent: 'center', margin: '0 auto', width: '100%', background: '#fff', border: '1px solid #e0e0e0', fontSize: '0.85rem' }}>
+      <CardContent sx={{ p: 0.7 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', mb: 0.5 }}>
+          <Typography variant="subtitle2" fontWeight={700} gutterBottom align="center" sx={{ width: '100%', fontSize: '0.95rem' }}>
+            + Thêm Công Việc Mới
+          </Typography>
+        </Box>
         <Box component="form" onSubmit={handleSubmit} autoComplete="off">
-          <Grid container spacing={2} columns={12} alignItems="center">
+          <Grid container spacing={0.7} columns={10} alignItems="center" sx={{ fontSize: '0.85rem' }}>
             <Grid gridColumn="span 5">
               <TextField
                 label="Tiêu đề công việc"
@@ -53,8 +55,8 @@ const TaskForm = () => {
                 variant="outlined"
               />
             </Grid>
-            <Grid gridColumn="span 3">
-              <FormControl fullWidth required sx={{ minWidth: 180 }}>
+            <Grid gridColumn="span 5">
+              <FormControl fullWidth required sx={{ minWidth: 10 }}>
                 <InputLabel id="priority-label">Mức độ ưu tiên</InputLabel>
                 <Select
                   labelId="priority-label"
@@ -85,7 +87,7 @@ const TaskForm = () => {
                 type="submit"
                 variant="contained"
                 sx={{
-                  height: '100%',
+                  height: '50px',
                   background: 'linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)',
                   fontWeight: 700,
                   boxShadow: 2,

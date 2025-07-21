@@ -77,58 +77,8 @@ const TaskList = () => {
 
   return (
     <>
-      {/* Filter & Search */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2, p: 3, minWidth: 700, display: 'flex', justifyContent: 'center', width: '30vw', margin: '1 auto' }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={700} gutterBottom>🔎 Tìm Kiếm & Lọc</Typography>
-          <Grid container spacing={2} alignItems="center">
-            <Grid gridColumn="span 5">
-              <TextField label="Tìm kiếm theo tên" value={search} onChange={e => setSearch(e.target.value)} fullWidth variant="outlined" />
-            </Grid>
-            <Grid gridColumn="span 3">
-              <FormControl fullWidth>
-                <InputLabel id="priority-filter-label">Lọc theo mức độ ưu tiên</InputLabel>
-                <Select
-                  labelId="priority-filter-label"
-                  id="priority-filter"
-                  value={priorityFilter}
-                  label="Lọc theo mức độ ưu tiên"
-                  onChange={e => setPriorityFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="high">Cao (High)</MenuItem>
-                  <MenuItem value="medium">Trung bình (Medium)</MenuItem>
-                  <MenuItem value="low">Thấp (Low)</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid gridColumn="span 2">
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<Clear />}
-                onClick={() => { setSearch(''); setPriorityFilter('all'); }}
-                fullWidth
-              >
-                Xóa Bộ Lọc
-              </Button>
-            </Grid>
-            <Grid gridColumn="span 2">
-              <Button
-                variant="contained"
-                color="error"
-                onClick={handleDeleteAll}
-                fullWidth
-              >
-                Xóa Tất Cả
-              </Button>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
       {/* Stats */}
-      <Grid container spacing={2} columns={12} mb={2}>
+      <Grid container spacing={2} columns={12} mb={2} justifyContent="center" alignItems="center" textAlign="center">
         <Grid gridColumn="span 3">
           <Paper elevation={3} sx={{ p: 2, textAlign: 'center', borderRadius: 2 }}>
             <Typography variant="h6" color="primary">{stats.total}</Typography>
@@ -156,11 +106,25 @@ const TaskList = () => {
       </Grid>
 
       {/* Task List */}
-      <Card sx={{ borderRadius: 10, boxShadow: 1, borderLeft: '10px solid #1976d2', mb: 5, p: 9, display: 'flex', justifyContent: 'center', width: '100%', minWidth: 0, maxWidth: 'none', pt: 10 }}>
+      <Card
+        sx={{
+          borderRadius: 10,
+          boxShadow: 1,
+          borderLeft: '10px solid #1976d2',
+          mb: 5,
+          p: 9,
+          display: 'flex',
+          justifyContent: 'center',
+          maxWidth: 1000,
+          pt: 10,
+          margin: '0 auto',
+          width: '100%',
+        }}
+      >
         <CardContent>
-          <Typography variant="h6" fontWeight={700} gutterBottom>📝 Danh Sách Công Việc</Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Stack spacing={2}>
+          <Typography variant="h5" fontWeight={1000} gutterBottom align="center">📝 Danh Sách Công Việc</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
             {filteredTasks.length === 0 && (
               <Typography color="text.secondary">Không có công việc nào phù hợp.</Typography>
             )}
@@ -173,25 +137,25 @@ const TaskList = () => {
                 <Paper key={task.id || idx} elevation={4}
                   sx={{
                     p: 1.5,
-                    minHeight: 120,
+                    minHeight: 50,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    borderLeft: `6px solid ${
+                    borderLeft: `5px solid ${
                       task.priority === 'high' ? '#d32f2f' : task.priority === 'medium' ? '#fbc02d' : '#388e3c'
                     }`,
                     background: task.completed ? '#f0f4c3' : '#fff',
                     transition: 'box-shadow 0.2s, transform 0.2s',
                     width: '100%',
                     margin: 0,
-                    marginBottom: '50px',
+                    marginBottom: '40px',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', p: 1 }}>
                     <Typography
                       variant="h6"
                       sx={{
-                        fontSize: 18,
+                        fontSize: 19,
                         textDecoration: task.completed ? 'line-through' : 'none',
                         color: task.completed ? 'gray' : 'inherit',
                         mr: 4,
@@ -204,7 +168,7 @@ const TaskList = () => {
                     >
                       {task.title}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 2, justifyContent: 'flex-end' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 10, justifyContent: 'flex-end' }}>
                       <Chip
                         label={(() => {
                           if (task.priority === 'high') return 'Cao';
@@ -214,7 +178,7 @@ const TaskList = () => {
                         })()}
                         color={PRIORITY_LABELS[task.priority]?.color || 'default'}
                         size="medium"
-                        sx={{ fontSize: 14, height: 32 }}
+                        sx={{ fontSize: 15, height: 1 }}
                       />
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: 14, textAlign: 'right', minWidth: 120 }}>
                         Hạn chót: {formatVietnameseDate(task.endDate)}
@@ -229,7 +193,7 @@ const TaskList = () => {
                           checked={task.completed}
                           onChange={() => handleToggle(task)}
                           color="success"
-                          sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }}
+                          sx={{ '& .MuiSvgIcon-root': { fontSize: 25 } }}
                         />
                       </Tooltip>
                       <Button
@@ -245,7 +209,7 @@ const TaskList = () => {
                   </Box>
                   {isOverdue && (
                     <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
-                      <Chip label="Quá hạn" color="error" size="small" sx={{ fontWeight: 700 }} />
+                      <Chip label="Quá hạn" color="error" size="small" sx={{ fontWeight: 500 }} />
                     </Box>
                   )}
                 </Paper>
