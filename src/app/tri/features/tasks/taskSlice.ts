@@ -1,85 +1,103 @@
-import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
-import { Task } from "./taskTypes";
-import { loadFromLocalStorage, saveToLocalStorage } from "./taskUtils";
+import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit"; // Import các hàm từ Redux Toolkit
+import { Task } from "./taskTypes"; // Import kiểu dữ liệu Task
+import * as taskApi from "./taskApi"; // Import các hàm gọi API
 
-// State quản lý toàn bộ task
+// Định nghĩa state cho slice quản lý Task
 export interface TaskState {
-  tasks: Task[];           // Danh sách công việc
-  editingId: number | null;// ID công việc đang sửa (nếu có)
-  currentId: number;       // ID tiếp theo sẽ dùng khi thêm mới
-  loading?: boolean;       // Trạng thái loading cho async
-  error?: string | null;   // Lỗi khi fetch
+  tasks: Task[];              // Danh sách các Task
+  editingId: string | null;   // ID của Task đang được chỉnh sửa (nếu có)
+  loading?: boolean;          // Trạng thái loading khi gọi API
+  error?: string | null;      // Thông báo lỗi (nếu có)
 }
+
+// State khởi tạo ban đầu
 const initialState: TaskState = {
-  tasks: loadFromLocalStorage(),
+  tasks: [],
   editingId: null,
-  currentId: loadFromLocalStorage().reduce((max, t) => Math.max(max, t.id), 0) + 1,
   loading: false,
   error: null,
 };
 
-// Async thunk: fetchTasks (giả lập fetch từ API)
+// Thunk lấy danh sách Task từ API
 export const fetchTasks = createAsyncThunk<Task[], void>(
   "tasks/fetchTasks",
   async () => {
-    // Giả lập fetch API, trả về mảng Task sau 1s
-    return new Promise<Task[]>((resolve) => {
-      setTimeout(() => {
-        const data = loadFromLocalStorage();
-        resolve(data);
-      }, 1000);
-    });
+    return await taskApi.getTasks(); // Gọi hàm lấy danh sách Task từ API
   }
 );
 
+// Thunk thêm mới Task lên API
+export const addTask = createAsyncThunk<Task, Omit<Task, "id">>(
+  "tasks/addTask",
+  async (task) => {
+    return await taskApi.createTask(task); // Gọi hàm tạo Task mới trên API
+  }
+);
+
+// Thunk cập nhật Task lên API
+export const updateTaskAsync = createAsyncThunk<Task, { id: string; updates: Partial<Task> }>(
+  "tasks/updateTask",
+  async ({ id, updates }) => {
+    return await taskApi.updateTask(id, updates); // Gọi hàm cập nhật Task trên API
+  }
+);
+
+// Thunk xóa Task khỏi API
+export const deleteTaskAsync = createAsyncThunk<string, string>(
+  "tasks/deleteTask",
+  async (id) => {
+    await taskApi.deleteTask(id); // Gọi hàm xóa Task trên API
+    return id; // Trả về id để cập nhật lại state
+  }
+);
+
+// Slice quản lý Task với các reducer và extraReducers cho các thunk
 const taskSlice = createSlice({
-  name: "tasks",
+  name: "tasks", // Tên slice
   initialState,
   reducers: {
-    addTask: (state, action: PayloadAction<Omit<Task, "id">>) => {
-      const task: Task = { id: state.currentId++, ...action.payload };
-      state.tasks.push(task);
-      saveToLocalStorage(state.tasks);
-    },
-    deleteTask: (state, action: PayloadAction<number>) => {
-      state.tasks = state.tasks.filter(t => t.id !== action.payload);
-      saveToLocalStorage(state.tasks);
-    },
-    updateTask: (state, action: PayloadAction<Task>) => {
-      const index = state.tasks.findIndex(t => t.id === action.payload.id);
-      if (index !== -1) {
-        state.tasks[index] = action.payload;
-        saveToLocalStorage(state.tasks);
-      }
-    },
-    markAsDone: (state, action: PayloadAction<number>) => {
-      const task = state.tasks.find(t => t.id === action.payload);
-      if (task && task.status !== "Done") {
-        task.status = "Done";
-        saveToLocalStorage(state.tasks);
-      }
-    },
-    setEditing: (state, action: PayloadAction<number | null>) => {
+    // Đặt ID của Task đang chỉnh sửa
+    setEditing: (state, action: PayloadAction<string | null>) => {
       state.editingId = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
+      // Xử lý trạng thái khi fetchTasks
       .addCase(fetchTasks.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchTasks.fulfilled, (state, action) => {
         state.loading = false;
-        state.tasks = action.payload;
+        // Chuẩn hóa: luôn đảm bảo mỗi task có labels/projects là mảng
+        state.tasks = action.payload.map(task => ({
+          ...task,
+          labels: Array.isArray(task.labels) ? task.labels : [],
+          projects: Array.isArray(task.projects) ? task.projects : [],
+        }));
         state.error = null;
       })
       .addCase(fetchTasks.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch tasks";
+      })
+      // Xử lý khi thêm Task thành công
+      .addCase(addTask.fulfilled, (state, action) => {
+        state.tasks.push(action.payload);
+      })
+      // Xử lý khi cập nhật Task thành công
+      .addCase(updateTaskAsync.fulfilled, (state, action) => {
+        const idx = state.tasks.findIndex(t => t.id === action.payload.id);
+        if (idx !== -1) state.tasks[idx] = action.payload;
+      })
+      // Xử lý khi xóa Task thành công
+      .addCase(deleteTaskAsync.fulfilled, (state, action) => {
+        state.tasks = state.tasks.filter(t => t.id.toString() !== action.payload);
       });
   },
 });
 
-export const { addTask, deleteTask, updateTask, markAsDone, setEditing } = taskSlice.actions;
+// Export action và reducer
+export const { setEditing } = taskSlice.actions;
 export default taskSlice.reducer; 

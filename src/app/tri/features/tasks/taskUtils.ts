@@ -1,12 +1,10 @@
 import { Task } from "./taskTypes";
 
-// Save tasks to localStorage
-export const saveToLocalStorage = (tasks: Task[]) => {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-};
-
-// Load tasks from localStorage
-export const loadFromLocalStorage = (): Task[] => {
-  const data = localStorage.getItem("tasks");
-  return data ? JSON.parse(data) : [];
-}; 
+/**
+ * Hàm tiện ích trả về base URL cho một collection (ví dụ: 'tasks' -> '/api/tasks')
+ * @param collectionName Tên collection (ví dụ: 'tasks', 'users', ...)
+ * @returns Đường dẫn base URL cho collection
+ */
+export function getBaseURL(collectionName: string): string {
+  return `/api/${collectionName}`;
+}

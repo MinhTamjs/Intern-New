@@ -123,3 +123,150 @@ button, .MuiButton-root {
     font-size: 1rem !important;
   }
 } 
+
+/* Dark mode overrides */
+/* DARK MODE: Gradient xanh tím sang trọng, dịu mắt */
+.dark-mode {
+  background: linear-gradient(135deg, #232a4d 0%, #3a3f6d 100%) !important;
+  color: #e0e6ff;
+}
+/* DARK MODE REFACTOR: Chỉ đổi màu nền, text chủ đạo, giữ lại style đẹp của light mode */
+.dark-mode .MuiPaper-root,
+.dark-mode .MuiBox-root,
+.dark-mode .MuiStack-root,
+.dark-mode .MuiContainer-root {
+  background: #f5f6fa !important;
+  color: #181a1b !important;
+}
+.dark-mode .MuiButton-root {
+  background: #7c7fd6 !important;
+  color: #fff !important;
+}
+.dark-mode .MuiButton-root:hover {
+  background: #5a5fa3 !important;
+}
+.dark-mode .MuiTypography-root,
+.dark-mode .MuiTypography-h4,
+.dark-mode .MuiTypography-h6,
+.dark-mode .MuiInputLabel-root,
+.dark-mode .MuiFormLabel-root {
+  color: #5a5fa3 !important;
+}
+.dark-mode .MuiPaper-root .MuiChip-root,
+.dark-mode .MuiBox-root .MuiChip-root,
+.dark-mode .MuiStack-root .MuiChip-root {
+  background: #5a5fa3 !important;
+  color: #fff !important;
+  border: 1px solid #7c7fd6 !important;
+}
+.dark-mode .MuiTable-root .MuiChip-root,
+.dark-mode .MuiTableCell-root .MuiChip-root {
+  background: unset !important;
+  color: unset !important;
+  border: unset !important;
+  box-shadow: unset !important;
+  font-weight: unset !important;
+}
+/* Không override input, combobox, table, chip trong table để giữ style light mode */
+.dark-mode .MuiTextField-root input,
+.dark-mode .MuiInputBase-input,
+.dark-mode .MuiOutlinedInput-root,
+.dark-mode .MuiAutocomplete-root .MuiOutlinedInput-root,
+.dark-mode .MuiSelect-root,
+.dark-mode .MuiSelect-select {
+  background: #fff !important;
+  color: #181a1b !important;
+  border: 1.5px solid #e0e0e0 !important;
+  border-radius: 8px;
+}
+.dark-mode .MuiInputBase-input::placeholder {
+  color: #888 !important;
+  opacity: 1;
+}
+.dark-mode .MuiInputLabel-root,
+.dark-mode .MuiFormLabel-root {
+  color: #555 !important;
+}
+.dark-mode .MuiOutlinedInput-notchedOutline {
+  border-color: #e0e0e0 !important;
+}
+/* Đổi màu chip ngoài table khi dark mode */
+.dark-mode .MuiPaper-root .MuiChip-root,
+.dark-mode .MuiBox-root .MuiChip-root,
+.dark-mode .MuiStack-root .MuiChip-root {
+  background: #5a5fa3 !important;
+  color: #fff !important;
+  border: 1px solid #7c7fd6 !important;
+}
+/* Đảm bảo chip trong table giữ màu gốc ở dark mode */
+.dark-mode table .MuiChip-root,
+.dark-mode .MuiTable-root .MuiChip-root,
+.dark-mode .MuiTableCell-root .MuiChip-root {
+  background: unset !important;
+  color: unset !important;
+  border: unset !important;
+  box-shadow: unset !important;
+  font-weight: unset !important;
+  filter: none !important;
+}
+/* Chỉ override chip ngoài table */
+.dark-mode .MuiPaper-root .MuiChip-root,
+.dark-mode .MuiBox-root .MuiChip-root,
+.dark-mode .MuiStack-root .MuiChip-root {
+  background: #5a5fa3 !important;
+  color: #fff !important;
+  border: 1px solid #7c7fd6 !important;
+}
+/* DARK MODE: Button đồng bộ với background tím đậm */
+.dark-mode .MuiButton-root {
+  background: #5a5fa3 !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px 0 rgba(44, 54, 120, 0.10);
+  font-weight: 700;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+}
+.dark-mode .MuiButton-root:hover {
+  background: #7c7fd6 !important;
+}
+
+/* DARK MODE: Label, title, label input, combobox sang tím đậm */
+.dark-mode .MuiTypography-root,
+.dark-mode .MuiTypography-h4,
+.dark-mode .MuiTypography-h6,
+.dark-mode .MuiInputLabel-root,
+.dark-mode .MuiFormLabel-root {
+  color: #5a5fa3 !important;
+}
+.dark-mode .MuiAutocomplete-root .MuiOutlinedInput-root {
+  background: #fff !important;
+  color: #181a1b !important;
+  border: 1.5px solid #e0e0e0 !important;
+}
+.dark-mode .MuiAutocomplete-root .MuiAutocomplete-inputRoot {
+  color: #181a1b !important;
+}
+.dark-mode .MuiAutocomplete-root .MuiChip-root {
+  background: #e0e0e0 !important;
+  color: #181a1b !important;
+}
+/* XÓA override màu table ở dark mode để giữ nguyên màu LightMode */
+.dark-mode .MuiTable-root,
+.dark-mode .MuiTableCell-root,
+.dark-mode .MuiTableHead-root .MuiTableCell-root {
+  background: unset !important;
+  color: unset !important;
+  border-color: unset !important;
+  font-weight: unset !important;
+  border-bottom: unset !important;
+  box-shadow: unset !important;
+}
+.dark-mode .MuiSvgIcon-root {
+  color: #a3a8f7 !important;
+}
+.dark-mode .MuiTooltip-tooltip {
+  background: #3a3f6d !important;
+  color: #e0e6ff !important;
+}
