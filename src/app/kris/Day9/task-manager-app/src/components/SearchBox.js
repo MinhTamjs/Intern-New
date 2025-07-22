@@ -18,6 +18,13 @@ const SearchBox = ({ search, setSearch, priorityFilter, setPriorityFilter, handl
             onChange={e => setSearch(e.target.value)} 
             variant="outlined" 
             fullWidth
+            InputProps={{
+              sx: { height: 40 },
+              inputProps: { style: { textAlign: 'left' } }
+            }}
+            InputLabelProps={{
+              sx: { marginTop: '-6px' }
+            }}
             sx={{ height: 40, '.MuiInputBase-root': { height: 40 } }} 
           />
         </Box>

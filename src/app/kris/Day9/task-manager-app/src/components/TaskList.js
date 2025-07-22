@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchTasks, updateTaskAsync, deleteTaskAsync } from '../features/tasks/taskSlice';
 import {
@@ -19,17 +19,21 @@ function formatVietnameseDate(dateStr) {
   return d.format('DD/MM/YY');
 }
 
-const TaskList = () => {
+const TaskList = ({ search, setSearch, priorityFilter, setPriorityFilter, setHandleDeleteAll }) => {
   const { tasks, status, error } = useSelector((state) => state.tasks);
   const dispatch = useDispatch();
-
-  // Filter & search state
-  const [search, setSearch] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
 
   useEffect(() => {
     dispatch(fetchTasks());
   }, [dispatch]);
+
+  // Provide handleDeleteAll to parent for SearchBox
+  useEffect(() => {
+    if (setHandleDeleteAll) {
+      setHandleDeleteAll(() => handleDeleteAll);
+    }
+    // eslint-disable-next-line
+  }, [tasks]);
 
   // Filtered tasks
   const filteredTasks = useMemo(() => {
