@@ -108,9 +108,9 @@ const TaskList = () => {
       {/* Task List */}
       <Card
         sx={{
-          borderRadius: 10,
+          borderRadius: 0,
           boxShadow: 1,
-          borderLeft: '10px solid #1976d2',
+          border: '4px solid #1976d2',
           mb: 5,
           p: 9,
           display: 'flex',
