@@ -11,8 +11,8 @@ const App = () => {
         <Typography variant="h3" fontWeight={900} align="center" mb={4} color="#1976d2" letterSpacing={2}>
           Task Manager 4.0
         </Typography>
-        <SearchBox />
         <TaskForm />
+        <SearchBox />
         <TaskList />
       </Container>
     </Box>

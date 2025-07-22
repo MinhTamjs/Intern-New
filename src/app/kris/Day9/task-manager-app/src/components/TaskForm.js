@@ -36,7 +36,7 @@ const TaskForm = () => {
   };
 
   return (
-    <Card sx={{ mb: 4, borderRadius: 0, boxShadow: 2, p: 0.2, width: '100%', background: '#fff', border: '4px solid #1976d2', fontSize: '0.85rem' }}>
+    <Card sx={{ mb: 4, borderRadius: 0, boxShadow: 2, p: 0.2, maxWidth: 1060, mx: 'auto', width: '100%', background: '#fff', border: '4px solid #1976d2', fontSize: '0.85rem' }}>
       <CardContent sx={{ p: 0.7 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', mb: 0.5 }}>
           <Typography variant="subtitle2" fontWeight={700} gutterBottom align="center" sx={{ width: '100%', fontSize: '0.95rem' }}>

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Card, CardContent, Typography, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button, Box } from '@mui/material';
+import { Card, CardContent, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Button, Box } from '@mui/material';
 import { Clear } from '@mui/icons-material';
 
 const SearchBox = ({ search, setSearch, priorityFilter, setPriorityFilter, handleDeleteAll }) => (
-  <Card sx={{ mb: 6, borderRadius: 0, boxShadow: 3, p: 0.2, width: '100%', background: '#fff', border: '4px solid #1976d2', fontSize: '0.95rem', minHeight: 0 }}>
+  <Card sx={{ mb: 4, borderRadius: 0, boxShadow: 3, p: 0.2, maxWidth: 1060, mx: 'auto', width: '100%', background: '#fff', border: '4px solid #1976d2', fontSize: '0.95rem', minHeight: 0 }}>
     <CardContent sx={{ p: 0.7 }}>
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
         <Typography variant="subtitle1" fontWeight={700} gutterBottom align="center" sx={{ mb: 0.5, fontSize: '1.05rem', width: '100%' }}>
