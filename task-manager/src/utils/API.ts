@@ -1,4 +1,4 @@
-const BASE_URL = 'https://crudcrud.com/api/38ff9477c25d4a36bbe433758285778d';
+const BASE_URL = 'https://crudcrud.com/api/7d36fea3390441ad8d51bde2778bed33';
 const COLLECTION = 'tasks';
 
 export interface Task {

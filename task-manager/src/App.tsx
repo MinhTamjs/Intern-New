@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, type ChangeEvent } from 'react';
+// src/App.tsx
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch, RootState } from './store';
 import {
   fetchTasksAsync,
   addTaskAsync,
@@ -8,264 +8,142 @@ import {
   deleteTaskAsync,
   type Task,
 } from './slice';
-import './App.css';
+import type { RootState, AppDispatch } from './store';
 
-type Priority = 'high' | 'medium' | 'low';
-type StatusFilter = 'all' | 'completed' | 'incomplete';
-type PriorityFilter = 'all' | Priority;
-
-const PRIORITY_LABELS: Record<Priority, string> = {
-  high: 'Cao',
-  medium: 'Trung bình',
-  low: 'Thấp',
-};
-
-const defaultForm = {
+const defaultForm: Omit<Task, '_id'> = {
   title: '',
-  priority: 'medium' as Priority,
+  completed: false,
+  priority: 'medium',
   startDate: '',
   endDate: '',
   note: '',
-  completed: false,
 };
 
-export default function App() {
+function App() {
   const dispatch = useDispatch<AppDispatch>();
   const { tasks, status, error } = useSelector((state: RootState) => state.tasks);
 
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState<Omit<Task, '_id'>>(defaultForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
     dispatch(fetchTasksAsync());
   }, [dispatch]);
 
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+      [name]:
+        type === 'checkbox'
+          ? (e.target instanceof HTMLInputElement ? e.target.checked : false)
+          : value,
     }));
   };
 
-  const resetForm = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingId) {
+      dispatch(updateTaskAsync({ ...form, _id: editingId }));
+      setEditingId(null);
+    } else {
+      dispatch(addTaskAsync(form));
+    }
     setForm(defaultForm);
-    setEditingId(null);
   };
 
-  const handleSave = async () => {
-    const { title, priority, startDate, endDate, note, completed } = form;
-
-    if (!title || !startDate || !endDate) {
-      alert('Vui lòng nhập đầy đủ thông tin!');
-      return;
-    }
-
-    try {
-      if (editingId) {
-        await dispatch(
-          updateTaskAsync({
-            _id: editingId,
-            title,
-            priority,
-            startDate,
-            endDate,
-            note,
-            completed,
-          })
-        ).unwrap();
-      } else {
-        const isDuplicate = tasks.some(
-          (t) => t.title.trim() === title.trim() && t.startDate === startDate
-        );
-        if (isDuplicate) {
-          alert('Công việc đã tồn tại!');
-          return;
-        }
-
-        await dispatch(
-          addTaskAsync({
-            title,
-            priority,
-            startDate,
-            endDate,
-            note,
-            completed: false,
-          })
-        ).unwrap();
-      }
-
-      resetForm();
-    } catch (err) {
-      console.error('Lỗi khi lưu công việc:', err);
-      alert('Đã xảy ra lỗi khi lưu công việc.');
-    }
-  };
-
-  const handleEdit = (id: string) => {
-    const task = tasks.find((t) => t._id === id);
-    if (!task) return;
-
+  const handleEdit = (task: Task) => {
+    setEditingId(task._id!);
     setForm({
       title: task.title,
+      completed: task.completed,
       priority: task.priority,
       startDate: task.startDate,
       endDate: task.endDate,
-      note: task.note ?? '',
-      completed: task.completed,
+      note: task.note || '',
     });
-
-    setEditingId(id);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await dispatch(deleteTaskAsync(id)).unwrap();
-    } catch (err) {
-      console.error('Xoá thất bại:', err);
-      alert('Không thể xoá công việc.');
-    }
+  const handleDelete = (_id: string) => {
+    dispatch(deleteTaskAsync(_id));
   };
-
-  const handleToggle = async (task: Task) => {
-    try {
-      await dispatch(
-        updateTaskAsync({ ...task, completed: !task.completed })
-      ).unwrap();
-    } catch (err) {
-      console.error('Cập nhật trạng thái thất bại:', err);
-    }
-  };
-
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(
-      (t) =>
-        (priorityFilter === 'all' || t.priority === priorityFilter) &&
-        (statusFilter === 'all' ||
-          (statusFilter === 'completed' ? t.completed : !t.completed)) &&
-        t.title.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [tasks, priorityFilter, statusFilter, search]);
 
   return (
-    <div className="app-wrapper">
-      <div className="container">
-        <h2>Quản Lý Công Việc</h2>
+    <div style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
+      <h1>Quản lý công việc</h1>
 
-        <div className="task-form">
+      <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
+        <input
+          name="title"
+          placeholder="Tiêu đề"
+          value={form.title}
+          onChange={handleChange}
+          required
+        />
+        <select name="priority" value={form.priority} onChange={handleChange}>
+          <option value="high">Cao</option>
+          <option value="medium">Trung bình</option>
+          <option value="low">Thấp</option>
+        </select>
+        <label>
+          Bắt đầu:
+          <input type="date" name="startDate" value={form.startDate} onChange={handleChange} />
+        </label>
+        <label>
+          Kết thúc:
+          <input type="date" name="endDate" value={form.endDate} onChange={handleChange} />
+        </label>
+        <label>
           <input
-            name="title"
-            value={form.title}
-            onChange={handleInputChange}
-            placeholder="Tên công việc"
+            type="checkbox"
+            name="completed"
+            checked={form.completed}
+            onChange={handleChange}
           />
-          <select name="priority" value={form.priority} onChange={handleInputChange}>
-            {Object.keys(PRIORITY_LABELS).map((p) => (
-              <option key={p} value={p}>
-                {PRIORITY_LABELS[p as Priority]}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            name="startDate"
-            value={form.startDate}
-            onChange={handleInputChange}
-          />
-          <input
-            type="date"
-            name="endDate"
-            value={form.endDate}
-            onChange={handleInputChange}
-          />
-          <textarea
-            name="note"
-            value={form.note}
-            onChange={handleInputChange}
-            placeholder="Ghi chú"
-          />
-          {editingId && (
-            <label>
-              <input
-                type="checkbox"
-                name="completed"
-                checked={form.completed}
-                onChange={handleInputChange}
-              />
-              Hoàn thành
-            </label>
-          )}
-          <button onClick={handleSave} disabled={status === 'loading'}>
-            {editingId ? 'Lưu công việc' : 'Thêm công việc'}
-          </button>
-          {status === 'failed' && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
+          Hoàn thành
+        </label>
+        <textarea
+          name="note"
+          placeholder="Ghi chú"
+          value={form.note}
+          onChange={handleChange}
+        />
+        <button type="submit">{editingId ? 'Lưu' : 'Thêm'}</button>
+        {editingId && <button onClick={() => setEditingId(null)}>Huỷ</button>}
+      </form>
+
+      {status === 'loading' && <p>Đang tải...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {tasks.map(task => (
+        <div key={task._id} className={`task-card ${task.completed ? 'completed' : ''} ${task.priority}`}>
+
+
+          <h3>{task.title}</h3>
+          <p>Ưu tiên: {task.priority}</p>
+          <p>
+            Từ {task.startDate} đến {task.endDate}
+          </p>
+          <p>{task.note}</p>
+          <label>
+            <input
+              type="checkbox"
+              checked={task.completed}
+              onChange={() =>
+                dispatch(updateTaskAsync({ ...task, completed: !task.completed }))
+              }
+            />
+            {task.completed ? '✅ Đã hoàn thành' : '❌ Chưa xong'}
+          </label>
+
+          <button onClick={() => handleEdit(task)}>Sửa</button>
+          <button onClick={() => handleDelete(task._id!)}>Xoá</button>
         </div>
-
-        <div className="task-filter">
-          <label>Ưu tiên:</label>
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
-          >
-            <option value="all">Tất cả</option>
-            {Object.keys(PRIORITY_LABELS).map((p) => (
-              <option key={p} value={p}>
-                {PRIORITY_LABELS[p as Priority]}
-              </option>
-            ))}
-          </select>
-
-          <label>Trạng thái:</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          >
-            <option value="all">Tất cả</option>
-            <option value="completed">Hoàn thành</option>
-            <option value="incomplete">Chưa hoàn thành</option>
-          </select>
-
-          <input
-            placeholder="Tìm kiếm..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <ul className="task-list">
-          {status === 'loading' && <p>Đang tải dữ liệu...</p>}
-
-          {filteredTasks.map((task) => (
-            <li key={task._id} className={`task-item ${task.priority}`}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => handleToggle(task)}
-                />
-                <strong
-                  style={{
-                    textDecoration: task.completed ? 'line-through' : 'none',
-                  }}
-                >
-                  {task.title}
-                </strong>
-              </label>
-              <em> ({PRIORITY_LABELS[task.priority]})</em>
-              <div>Bắt đầu: {task.startDate}</div>
-              <div>Kết thúc: {task.endDate}</div>
-              <div>Ghi chú: {task.note || 'Không có'}</div>
-              <button onClick={() => handleEdit(task._id!)}>Sửa</button>
-              <button onClick={() => handleDelete(task._id!)}>Xoá</button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      ))}
     </div>
   );
 }
+
+export default App;
