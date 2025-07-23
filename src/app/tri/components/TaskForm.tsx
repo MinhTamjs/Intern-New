@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "./store";
 import { addTask, fetchTasks } from "../features/tasks/taskSlice";
 import { Priority, Status } from "../features/tasks/taskTypes";
 import CloseIcon from "@mui/icons-material/Close";
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 
 // Danh sách nhãn mẫu và dự án mẫu (có thể lấy từ API hoặc hardcode demo)
 const sampleProjects = ["E-commerce Website", "Study Management App", "Internal Project"];
@@ -337,7 +338,7 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
             </TextField>
           </Grid>
         </Grid>
-        {/* Nút Add fullWidth, cùng độ rộng với input */}
+        {/* Nút Add task với icon, nổi bật */}
         <Box mt={2}>
           <Button
             type="submit"
@@ -346,6 +347,7 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
             size="large"
             fullWidth
             sx={{ borderRadius: 2, fontWeight: 600 }}
+            startIcon={<AddCircleIcon />}
           >
             Add
           </Button>

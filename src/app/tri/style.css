@@ -47,15 +47,6 @@ body {
   font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
 }
 
-.MuiTableCell-head {
-  background: #e0f2f1;
-  color: #111;
-  font-weight: bold !important;
-  font-size: 1.05rem;
-  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
-  text-shadow: 0 1px 6px #fff, 0 1px 6px #b2dfdb44;
-}
-
 .MuiTableCell-root {
   font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
   color: #222;
@@ -159,14 +150,6 @@ button, .MuiButton-root {
   color: #fff !important;
   border: 1px solid #7c7fd6 !important;
 }
-.dark-mode .MuiTable-root .MuiChip-root,
-.dark-mode .MuiTableCell-root .MuiChip-root {
-  background: unset !important;
-  color: unset !important;
-  border: unset !important;
-  box-shadow: unset !important;
-  font-weight: unset !important;
-}
 /* Không override input, combobox, table, chip trong table để giữ style light mode */
 .dark-mode .MuiTextField-root input,
 .dark-mode .MuiInputBase-input,
@@ -189,33 +172,6 @@ button, .MuiButton-root {
 }
 .dark-mode .MuiOutlinedInput-notchedOutline {
   border-color: #e0e0e0 !important;
-}
-/* Đổi màu chip ngoài table khi dark mode */
-.dark-mode .MuiPaper-root .MuiChip-root,
-.dark-mode .MuiBox-root .MuiChip-root,
-.dark-mode .MuiStack-root .MuiChip-root {
-  background: #5a5fa3 !important;
-  color: #fff !important;
-  border: 1px solid #7c7fd6 !important;
-}
-/* Đảm bảo chip trong table giữ màu gốc ở dark mode */
-.dark-mode table .MuiChip-root,
-.dark-mode .MuiTable-root .MuiChip-root,
-.dark-mode .MuiTableCell-root .MuiChip-root {
-  background: unset !important;
-  color: unset !important;
-  border: unset !important;
-  box-shadow: unset !important;
-  font-weight: unset !important;
-  filter: none !important;
-}
-/* Chỉ override chip ngoài table */
-.dark-mode .MuiPaper-root .MuiChip-root,
-.dark-mode .MuiBox-root .MuiChip-root,
-.dark-mode .MuiStack-root .MuiChip-root {
-  background: #5a5fa3 !important;
-  color: #fff !important;
-  border: 1px solid #7c7fd6 !important;
 }
 /* DARK MODE: Button đồng bộ với background tím đậm */
 .dark-mode .MuiButton-root {
@@ -270,3 +226,25 @@ button, .MuiButton-root {
   background: #3a3f6d !important;
   color: #e0e6ff !important;
 }
+
+/* ===== Hiển thị đường kẻ ngang đậm rõ rệt, loại bỏ ghi đè border-bottom ===== */
+.MuiTable-root {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+.MuiTableCell-root {
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 4px solid #555 !important; /* Đậm rõ rệt cho body */
+}
+.MuiTableCell-root:last-child {
+  border-right: none;
+}
+.MuiTableCell-head {
+  border-bottom: 5px solid #222 !important; /* Đậm rõ rệt cho head cell */
+  border-right: none;
+}
+/* Ghi đè lại các rule có thể unset border-bottom */
+.MuiTableCell-root, .MuiTableCell-head {
+  border-bottom: unset;
+}
+/* =================================================================== */
