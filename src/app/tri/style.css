@@ -1,0 +1,250 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%);
+  min-height: 100vh;
+}
+
+.app-container, .MuiContainer-root {
+  background: #ffffffcc;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.08);
+  padding: 32px 16px 24px 16px;
+  margin: 32px auto;
+  max-width: 900px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
+}
+
+.MuiPaper-root {
+  border-radius: 14px !important;
+  box-shadow: 0 2px 12px 0 rgba(0,128,128,0.08) !important;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
+}
+
+.MuiButton-root, .custom-btn {
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  margin: 0 4px;
+  box-shadow: 0 2px 8px 0 rgba(67,233,123,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+}
+.MuiButton-root:hover, .custom-btn:hover {
+  background: linear-gradient(90deg, #38f9d7 0%, #43e97b 100%);
+  box-shadow: 0 4px 16px 0 rgba(56,249,215,0.15);
+}
+
+.MuiChip-root {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+}
+
+.MuiTableCell-root {
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
+  text-shadow: 0 1px 6px #fff, 0 1px 6px #b2dfdb22;
+}
+
+.MuiTableRow-root.selected {
+  background: #b2dfdb44 !important;
+}
+
+.MuiTextField-root {
+  background: #f8fffc;
+  border-radius: 6px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  color: #222;
+}
+
+.MuiTypography-h4 {
+  color: #009688;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+  text-shadow: 0 2px 8px #fff, 0 2px 8px #b2dfdb44;
+}
+
+/* Custom English button text (override if needed) */
+button, .MuiButton-root {
+  text-transform: none !important;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+}
+
+/* Đậm và làm đẹp label cho toàn bộ TextField, combo box, date box */
+.MuiFormLabel-root {
+  font-weight: 700 !important;
+  color: #009688 !important;
+  font-size: 1.08rem !important;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 6px #b2dfdb44, 0 1px 6px #fff;
+  text-transform: capitalize;
+  font-family: 'Arial', 'Segoe UI', Arial, sans-serif;
+}
+
+/* Đậm label khi focus */
+.Mui-focused .MuiFormLabel-root {
+  color: #43e97b !important;
+  text-shadow: 0 2px 8px #43e97b33, 0 2px 8px #fff;
+}
+
+/* Đậm label khi error */
+.Mui-error .MuiFormLabel-root {
+  color: #d32f2f !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .app-container, .MuiContainer-root {
+    padding: 8px 2px 8px 2px;
+    margin: 8px auto;
+  }
+  .MuiTableCell-root, .MuiTableCell-head {
+    font-size: 0.95rem;
+    padding: 4px 2px;
+  }
+  .MuiFormLabel-root {
+    font-size: 1rem !important;
+  }
+} 
+
+/* Dark mode overrides */
+/* DARK MODE: Gradient xanh tím sang trọng, dịu mắt */
+.dark-mode {
+  background: linear-gradient(135deg, #232a4d 0%, #3a3f6d 100%) !important;
+  color: #e0e6ff;
+}
+/* DARK MODE REFACTOR: Chỉ đổi màu nền, text chủ đạo, giữ lại style đẹp của light mode */
+.dark-mode .MuiPaper-root,
+.dark-mode .MuiBox-root,
+.dark-mode .MuiStack-root,
+.dark-mode .MuiContainer-root {
+  background: #f5f6fa !important;
+  color: #181a1b !important;
+}
+.dark-mode .MuiButton-root {
+  background: #7c7fd6 !important;
+  color: #fff !important;
+}
+.dark-mode .MuiButton-root:hover {
+  background: #5a5fa3 !important;
+}
+.dark-mode .MuiTypography-root,
+.dark-mode .MuiTypography-h4,
+.dark-mode .MuiTypography-h6,
+.dark-mode .MuiInputLabel-root,
+.dark-mode .MuiFormLabel-root {
+  color: #5a5fa3 !important;
+}
+.dark-mode .MuiPaper-root .MuiChip-root,
+.dark-mode .MuiBox-root .MuiChip-root,
+.dark-mode .MuiStack-root .MuiChip-root {
+  background: #5a5fa3 !important;
+  color: #fff !important;
+  border: 1px solid #7c7fd6 !important;
+}
+/* Không override input, combobox, table, chip trong table để giữ style light mode */
+.dark-mode .MuiTextField-root input,
+.dark-mode .MuiInputBase-input,
+.dark-mode .MuiOutlinedInput-root,
+.dark-mode .MuiAutocomplete-root .MuiOutlinedInput-root,
+.dark-mode .MuiSelect-root,
+.dark-mode .MuiSelect-select {
+  background: #fff !important;
+  color: #181a1b !important;
+  border: 1.5px solid #e0e0e0 !important;
+  border-radius: 8px;
+}
+.dark-mode .MuiInputBase-input::placeholder {
+  color: #888 !important;
+  opacity: 1;
+}
+.dark-mode .MuiInputLabel-root,
+.dark-mode .MuiFormLabel-root {
+  color: #555 !important;
+}
+.dark-mode .MuiOutlinedInput-notchedOutline {
+  border-color: #e0e0e0 !important;
+}
+/* DARK MODE: Button đồng bộ với background tím đậm */
+.dark-mode .MuiButton-root {
+  background: #5a5fa3 !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px 0 rgba(44, 54, 120, 0.10);
+  font-weight: 700;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+}
+.dark-mode .MuiButton-root:hover {
+  background: #7c7fd6 !important;
+}
+
+/* DARK MODE: Label, title, label input, combobox sang tím đậm */
+.dark-mode .MuiTypography-root,
+.dark-mode .MuiTypography-h4,
+.dark-mode .MuiTypography-h6,
+.dark-mode .MuiInputLabel-root,
+.dark-mode .MuiFormLabel-root {
+  color: #5a5fa3 !important;
+}
+.dark-mode .MuiAutocomplete-root .MuiOutlinedInput-root {
+  background: #fff !important;
+  color: #181a1b !important;
+  border: 1.5px solid #e0e0e0 !important;
+}
+.dark-mode .MuiAutocomplete-root .MuiAutocomplete-inputRoot {
+  color: #181a1b !important;
+}
+.dark-mode .MuiAutocomplete-root .MuiChip-root {
+  background: #e0e0e0 !important;
+  color: #181a1b !important;
+}
+/* XÓA override màu table ở dark mode để giữ nguyên màu LightMode */
+.dark-mode .MuiTable-root,
+.dark-mode .MuiTableCell-root,
+.dark-mode .MuiTableHead-root .MuiTableCell-root {
+  background: unset !important;
+  color: unset !important;
+  border-color: unset !important;
+  font-weight: unset !important;
+  border-bottom: unset !important;
+  box-shadow: unset !important;
+}
+.dark-mode .MuiSvgIcon-root {
+  color: #a3a8f7 !important;
+}
+.dark-mode .MuiTooltip-tooltip {
+  background: #3a3f6d !important;
+  color: #e0e6ff !important;
+}
+
+/* ===== Hiển thị đường kẻ ngang đậm rõ rệt, loại bỏ ghi đè border-bottom ===== */
+.MuiTable-root {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+.MuiTableCell-root {
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 4px solid #555 !important; /* Đậm rõ rệt cho body */
+}
+.MuiTableCell-root:last-child {
+  border-right: none;
+}
+.MuiTableCell-head {
+  border-bottom: 5px solid #222 !important; /* Đậm rõ rệt cho head cell */
+  border-right: none;
+}
+/* Ghi đè lại các rule có thể unset border-bottom */
+.MuiTableCell-root, .MuiTableCell-head {
+  border-bottom: unset;
+}
+/* =================================================================== */
