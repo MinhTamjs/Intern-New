@@ -7,10 +7,7 @@ export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async () => {
 
 export const createTask = createAsyncThunk('tasks/createTask', async (task, { rejectWithValue }) => {
   try {
-    const tasks = await getTasks();
-    if (tasks.some(t => t.title === task.title)) {
-      return rejectWithValue('Task already exists');
-    }
+    // Bỏ kiểm tra trùng tên ở đây, chỉ gọi addTask
     return await addTask(task);
   } catch (error) {
     return rejectWithValue(error.message);
@@ -51,6 +48,7 @@ const taskSlice = createSlice({
       })
       .addCase(createTask.fulfilled, (state, action) => {
         state.tasks.push(action.payload);
+        state.error = null; // Reset error khi tạo task thành công
       })
       .addCase(createTask.rejected, (state, action) => {
         state.error = action.payload;

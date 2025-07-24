@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchTasks, updateTaskAsync, deleteTaskAsync } from '../features/tasks/taskSlice';
 import {
@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { Delete, Edit, FilterAlt, Clear, CheckCircle, HourglassEmpty, PriorityHigh, LowPriority } from '@mui/icons-material';
 import dayjs from 'dayjs';
+import EditTaskModal from './EditTaskModal';
 
 const PRIORITY_LABELS = {
   high: { label: 'Cao (High)', color: 'error', icon: <PriorityHigh fontSize="small" /> },
@@ -22,6 +23,8 @@ function formatVietnameseDate(dateStr) {
 const TaskList = ({ search, setSearch, priorityFilter, setPriorityFilter, setHandleDeleteAll }) => {
   const { tasks, status, error } = useSelector((state) => state.tasks);
   const dispatch = useDispatch();
+  const [editTask, setEditTask] = useState(null);
+  const [openEdit, setOpenEdit] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTasks());
@@ -81,6 +84,7 @@ const TaskList = ({ search, setSearch, priorityFilter, setPriorityFilter, setHan
 
   return (
     <>
+      <EditTaskModal open={openEdit} task={editTask} onClose={() => setOpenEdit(false)} />
       {/* Task List */}
       <Card
         sx={{
@@ -95,6 +99,7 @@ const TaskList = ({ search, setSearch, priorityFilter, setPriorityFilter, setHan
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          background: '#e0ffff',
         }}
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -193,6 +198,15 @@ const TaskList = ({ search, setSearch, priorityFilter, setPriorityFilter, setHan
                             sx={{ '& .MuiSvgIcon-root': { fontSize: 25 } }}
                           />
                         </Tooltip>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          startIcon={<Edit />}
+                          sx={{ fontWeight: 700, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.08)' }, mr: 1 }}
+                          onClick={() => { setEditTask(task); setOpenEdit(true); }}
+                        >
+                          Sửa
+                        </Button>
                         <Button
                           variant="contained"
                           color="error"
