@@ -1,3 +1,17 @@
+# Hướng dẫn cài đặt Todo App Redux Toolkit + TypeScript
+
+1. Cài dependencies:
+```bash
+npm install
+npm install -D @vitejs/plugin-react
+```
+2. Chạy project:
+```bash
+npm run dev
+```
+
+---
+
 # Ứng Dụng Quản Lý Công Việc - Ngày 4
 
 Ứng dụng quản lý công việc được xây dựng bằng TypeScript với kiểm soát kiểu dữ liệu chặt chẽ, lưu trữ dữ liệu vào localStorage và giao diện người dùng thân thiện.

@@ -1,23 +1,23 @@
 {
-  "name": "ngay4",
+  "name": "todo-redux-toolkit-ts",
   "version": "1.0.0",
-  "description": "Ứng dụng quản lý công việc được xây dựng bằng TypeScript với kiểm soát kiểu dữ liệu chặt chẽ, lưu trữ dữ liệu vào localStorage và giao diện người dùng thân thiện.",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@reduxjs/toolkit": "^2.8.2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "eslint": "^9.30.1",
-    "prettier": "^3.6.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-redux": "^9.2.0",
-    "typescript": "^5.8.3"
+    "@reduxjs/toolkit": "^1.9.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.1.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.6.0",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9"
   }
 }
