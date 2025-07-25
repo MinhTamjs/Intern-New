@@ -1,18 +1,13 @@
 import React, { useState } from "react";
 import { Stack, TextField, MenuItem, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
-import { useAppDispatch, useAppSelector } from "./store";
-import { setFilter } from "../features/filter/filterSlice";
-import { Priority, Status } from "../features/tasks/taskTypes";
+import { useAppDispatch, useAppSelector } from "../store";
+import { setFilter } from "../../features/filter/filterSlice";
+import type { Task } from "../../../../types/schema";
 import FilterListIcon from '@mui/icons-material/FilterList';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
-// Danh sách nhãn và dự án mẫu (nên đồng bộ với form, có thể lấy từ API)
-// Xóa sampleLabels, chỉ giữ sampleProjects cho project
-const sampleProjects = ["E-commerce Website", "Study Management App", "Internal Project"];
-
-const filterBoxStyle = { minWidth: 160, maxWidth: 200, height: 40 };
 const filterButtonStyle = { minWidth: 160, maxWidth: 200, height: 40, fontWeight: 600 };
 
 interface TaskFiltersProps {
@@ -24,9 +19,11 @@ interface TaskFiltersProps {
 
 const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, onSelectAll, totalTasks }) => {
   const dispatch = useAppDispatch();
-  const filter = useAppSelector(state => state.filter);
-  // Lấy danh sách task thực tế từ store để lấy tất cả label/project đã có
+  const filterStore = useAppSelector(state => state.filter);
   const tasks = useAppSelector(state => state.tasks.tasks);
+
+  // State cục bộ cho filter, chỉ dispatch khi nhấn nút Filter
+  const [filter, setFilterState] = useState(filterStore);
 
   // Lấy tất cả label thực tế từ danh sách task (không trùng lặp)
   const allLabels = Array.from(new Set(tasks.flatMap(task => task.labels ?? [])));
@@ -44,16 +41,16 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilter({ [e.target.name]: e.target.value }));
+    setFilterState({ ...filter, [e.target.name]: e.target.value });
   };
 
   // Xử lý chọn nhãn filter (multi-select)
   const handleLabelChange = (_: any, value: string[]) => {
-    dispatch(setFilter({ labels: value }));
+    setFilterState({ ...filter, labels: value });
   };
   // Xử lý chọn dự án filter (multi-select)
   const handleProjectChange = (_: any, value: string[]) => {
-    dispatch(setFilter({ projects: value }));
+    setFilterState({ ...filter, projects: value });
   };
 
   const handleDeleteClick = () => {
@@ -94,41 +91,43 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
         sx={{ flexWrap: 'wrap', rowGap: 2, columnGap: 2 }}
       >
         <TextField
-          label="Search keyword"
+          label="Từ khóa tìm kiếm"
           name="keyword"
           value={filter.keyword}
           onChange={handleChange}
           size="small"
           sx={{ minWidth: 160, flex: '1 1 200px', maxWidth: 300 }}
         />
+        {/* Combo box trạng thái */}
         <TextField
           select
-          label="Status"
+          label="Trạng thái"
           name="status"
           value={filter.status}
           onChange={handleChange}
           size="small"
-          sx={{ minWidth: 160, flex: '1 1 200px', maxWidth: 300 }}
+          sx={{ minWidth: 180, maxWidth: 260, flex: '1 1 220px' }} // Cho phép rộng hơn
         >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="Pending">Pending</MenuItem>
-          <MenuItem value="In Progress">In Progress</MenuItem>
-          <MenuItem value="Done">Done</MenuItem>
-          <MenuItem value="Expired">Expired</MenuItem>
+          <MenuItem value="">Tất cả</MenuItem>
+          <MenuItem value="Pending">Chưa làm</MenuItem>
+          <MenuItem value="In Progress">Đang làm</MenuItem>
+          <MenuItem value="Done">Hoàn thành</MenuItem>
+          <MenuItem value="Expired">Quá hạn</MenuItem>
         </TextField>
+        {/* Combo box độ ưu tiên */}
         <TextField
           select
-          label="Priority"
+          label="Độ ưu tiên"
           name="priority"
           value={filter.priority}
           onChange={handleChange}
           size="small"
-          sx={{ minWidth: 160, flex: '1 1 200px', maxWidth: 300 }}
+          sx={{ minWidth: 180, maxWidth: 260, flex: '1 1 220px' }} // Cho phép rộng hơn
         >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="High">High</MenuItem>
-          <MenuItem value="Medium">Medium</MenuItem>
-          <MenuItem value="Low">Low</MenuItem>
+          <MenuItem value="">Tất cả</MenuItem>
+          <MenuItem value="High">Cao</MenuItem>
+          <MenuItem value="Medium">Trung bình</MenuItem>
+          <MenuItem value="Low">Thấp</MenuItem>
         </TextField>
         {/* Bộ lọc nhãn (label, multi-select) */}
         <Autocomplete
@@ -138,10 +137,10 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
           value={filter.labels}
           onChange={handleLabelChange}
           renderInput={(params) => (
-            <TextField {...params} label="Labels" placeholder="Type label(s) to filter" size="small" />
+            <TextField {...params} label="Nhãn" placeholder="Nhập nhãn để lọc" size="small" fullWidth />
           )}
           size="small"
-          sx={{ minWidth: 160, flex: '1 1 200px', maxWidth: 300 }}
+          sx={{ minWidth: 200, maxWidth: 340, flex: '2 1 260px' }} // Cho phép rộng hơn
         />
         {/* Bộ lọc dự án (project, multi-select) */}
         <Autocomplete
@@ -151,10 +150,10 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
           value={filter.projects}
           onChange={handleProjectChange}
           renderInput={(params) => (
-            <TextField {...params} label="Projects" placeholder="Type project(s) to filter" size="small" />
+            <TextField {...params} label="Dự án" placeholder="Nhập dự án để lọc" size="small" fullWidth />
           )}
           size="small"
-          sx={{ minWidth: 160, flex: '1 1 200px', maxWidth: 300 }}
+          sx={{ minWidth: 200, maxWidth: 340, flex: '2 1 260px' }} // Cho phép rộng hơn
         />
         {/* Nút Filter với icon, màu primary nổi bật */}
         <Button
@@ -165,7 +164,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
           size="small"
           startIcon={<FilterListIcon />}
         >
-          Filter
+          Lọc
         </Button>
         {/* Nút Delete task với icon, màu đỏ nhạt (outlined) */}
         <Button
@@ -175,38 +174,35 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
           sx={{ minWidth: 120, flex: '0 0 auto', height: 40, fontWeight: 600, borderWidth: 2 }}
           startIcon={<DeleteIcon />}
         >
-          Delete task
+          Xóa công việc
         </Button>
-        {/* Nút Delete all với icon, màu cam nổi bật */}
+        {/* Nút Delete all với icon, nền cam, chữ trắng, dùng class riêng */}
         <Button
           variant="contained"
-          color="error"
+          className="delete-all-btn"
           onClick={handleDeleteAllClick}
           sx={{
             minWidth: 120,
             flex: '0 0 auto',
             height: 40,
             fontWeight: 600,
-            backgroundColor: '#ff9800', // cam nhạt
-            color: '#fff',
-            '&:hover': { backgroundColor: '#f57c00' }, // cam đậm hơn khi hover
             borderWidth: 2
           }}
           startIcon={<DeleteForeverIcon />}
         >
-          Delete all
+          Xóa tất cả
         </Button>
       </Stack>
       <Dialog open={openConfirm} onClose={handleCancelDelete}>
-        <DialogTitle>Confirm deletion</DialogTitle>
+        <DialogTitle>Xác nhận xóa</DialogTitle>
         <DialogContent>
           {confirmAll
-            ? 'Are you sure you want to delete all tasks?'
-            : `Are you sure you want to delete ${selectedIds.length} selected task(s)?`}
+            ? 'Bạn có chắc chắn muốn xóa tất cả các công việc?'
+            : `Bạn có chắc chắn muốn xóa ${selectedIds.length} công việc đã chọn?`}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelDelete}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Delete</Button>
+          <Button onClick={handleCancelDelete}>Hủy</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">Xóa</Button>
         </DialogActions>
       </Dialog>
       <Snackbar
@@ -216,7 +212,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({ selectedIds, onBulkDelete, on
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity="warning" onClose={() => setSnackbarOpen(false)}>
-          Please select at least one task to delete.
+          Vui lòng chọn ít nhất một công việc để xóa.
         </Alert>
       </Snackbar>
     </Paper>

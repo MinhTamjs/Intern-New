@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit"; // Import các hàm từ Redux Toolkit
-import { Task } from "./taskTypes"; // Import kiểu dữ liệu Task
+import type { Task } from "../../../types/schema"; // Chỉ dùng type Task cho state, bỏ Employee
 import * as taskApi from "./taskApi"; // Import các hàm gọi API
 
 // Định nghĩa state cho slice quản lý Task

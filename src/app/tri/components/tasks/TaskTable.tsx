@@ -8,32 +8,11 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import DoneIcon from "@mui/icons-material/Done";
 import CancelIcon from "@mui/icons-material/Cancel";
 import SaveIcon from "@mui/icons-material/Save";
-import { useAppDispatch } from "./store";
-import { Task, Priority, Status } from "../features/tasks/taskTypes";
-import { deleteTaskAsync, setEditing, updateTaskAsync, fetchTasks } from "../features/tasks/taskSlice";
-import tinycolor from 'tinycolor2';
+import { useAppDispatch } from "../store";
+import type { Task } from "../../../../types/schema";
+import { deleteTaskAsync, setEditing, updateTaskAsync, fetchTasks } from "../../features/tasks/taskSlice";
 import { useTheme } from '@mui/material/styles';
 
-
-// Hàm xác định màu cho trạng thái (status)
-const statusColor = (status: string) => {
-  // Danh sách màu pastel đẹp, không trùng nhau (có thể mở rộng)
-  switch (status) {
-    case "Pending": return "default";
-    case "In Progress": return "info";
-    case "Done": return "success";
-    case "Expired": return "error";
-    default: return "default";
-  }
-};
-
-// Hàm xác định màu cho độ ưu tiên (priority)
-const priorityColor = (priority: Priority) => {
-  if (priority === "High") return "error";
-  if (priority === "Medium") return "warning";
-  if (priority === "Low") return "warning";
-  return "default";
-};
 
 // Danh sách màu pastel đẹp, không trùng nhau (có thể mở rộng)
 const COLOR_PALETTE = [
@@ -127,9 +106,11 @@ interface TaskRowProps {
   onEditChange: (e: React.ChangeEvent<HTMLInputElement>) => void; // Hàm gọi khi thay đổi input
   onSave: () => void; // Hàm gọi khi lưu chỉnh sửa
   onCancel: () => void; // Hàm gọi khi hủy chỉnh sửa
-  onMarkDone: (id: string) => void; // Hàm gọi khi đánh dấu Done
   labelColorMap: Record<string, string>; // Map label -> màu
   projectColorMap: Record<string, string>; // Map project -> màu
+  selected: boolean; // Trạng thái đã chọn của dòng
+  onSelect: (e: React.ChangeEvent<HTMLInputElement>) => void; // Hàm gọi khi chọn dòng
+  // Đã loại bỏ employees
 }
 
 // Component dòng task riêng biệt, nhận props kiểu TaskRowProps
@@ -142,9 +123,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
     onEditChange, // Hàm gọi khi thay đổi input
     onSave, // Hàm gọi khi lưu chỉnh sửa
     onCancel, // Hàm gọi khi hủy chỉnh sửa
-    onMarkDone, // Hàm gọi khi đánh dấu Done
     labelColorMap, // Map label -> màu
     projectColorMap, // Map project -> màu
+    selected, // Trạng thái đã chọn của dòng
+    onSelect, // Hàm gọi khi chọn dòng
+    // Đã loại bỏ employees
   } = props;
   const isEditing = editingId === task.id.toString();
   const theme = useTheme();
@@ -154,6 +137,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
     // Chế độ chỉnh sửa (edit mode)
     return (
       <TableRow key={task.id} selected={isEditing}>
+        {/* Checkbox chọn dòng */}
+        <TableCell padding="checkbox">
+          <Checkbox checked={selected} onChange={onSelect} />
+        </TableCell>
         {/* ID task */}
         <TableCell>{task.id}</TableCell>
         {/* Chọn độ ưu tiên */}
@@ -199,12 +186,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
             InputLabelProps={{ shrink: true }}
           />
         </TableCell>
-        {/* Ngày kết thúc */}
+        {/* Sửa lại trường ngày kết thúc: dayExpired => dueDate (theo schema mới) */}
         <TableCell>
           <TextField
-            name="dayExpired"
+            name="dueDate"
             type="date"
-            value={editRow?.dayExpired || ""}
+            value={editRow?.dueDate || ""}
             onChange={onEditChange}
             size="small"
             InputLabelProps={{ shrink: true }}
@@ -247,6 +234,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
   // Chế độ xem thông thường (view mode)
   return (
     <TableRow key={task.id} selected={isEditing}>
+      {/* Checkbox chọn dòng */}
+      <TableCell padding="checkbox">
+        <Checkbox checked={selected} onChange={onSelect} />
+      </TableCell>
       {/* ID task */}
       <TableCell>{task.id}</TableCell>
       {/* Độ ưu tiên */}
@@ -263,8 +254,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
       <TableCell>{task.description}</TableCell>
       {/* Ngày bắt đầu */}
       <TableCell>{task.dayStarted}</TableCell>
-      {/* Ngày kết thúc */}
-      <TableCell>{task.dayExpired}</TableCell>
+      {/* Ở chế độ view: */}
+      <TableCell>{task.dueDate}</TableCell>
       {/* Trạng thái task */}
       <TableCell>
         <CustomChip
@@ -273,10 +264,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
           color={getStatusChipStyle(task.status, false).color}
         />
       </TableCell>
-      {/* Hiển thị các label (nếu có) */}
+      {/* Hiển thị các label (nếu có), luôn ép kiểu về mảng để tránh lỗi map trên string */}
       <TableCell>
         <Stack direction="row" spacing={0.5}>
-          {(task.labels ?? []).map((label, idx) => (
+          {(Array.isArray(task.labels) ? task.labels : []).map((label: string, idx: number) => (
             <CustomChip
               key={idx}
               label={label}
@@ -288,10 +279,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
           ))}
         </Stack>
       </TableCell>
-      {/* Hiển thị các project (nếu có) */}
+      {/* Hiển thị các project (nếu có), luôn ép kiểu về mảng để tránh lỗi map trên string */}
       <TableCell>
         <Stack direction="row" spacing={0.5}>
-          {(task.projects ?? []).map((project, idx) => (
+          {(Array.isArray(task.projects) ? task.projects : []).map((project: string, idx: number) => (
             <CustomChip
               key={idx}
               label={project}
@@ -303,7 +294,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
           ))}
         </Stack>
       </TableCell>
-      {/* Các nút thao tác: Edit, Delete, Mark as Done */}
+      {/* Các nút thao tác: Edit, Delete */}
       <TableCell>
         <Tooltip title="Edit">
           <IconButton
@@ -313,23 +304,25 @@ const TaskRow: React.FC<TaskRowProps> = React.memo((props) => {
             <EditIcon />
           </IconButton>
         </Tooltip>
-        {task.status !== "Done" && (
-          <Tooltip title="Mark as Done">
-            <IconButton
-              onClick={() => onMarkDone(task.id.toString())}
-              sx={{ bgcolor: '#43e97b', color: '#fff', '&:hover': { bgcolor: '#388e3c' } }}
-            >
-              <DoneIcon />
-            </IconButton>
-          </Tooltip>
-        )}
       </TableCell>
+      {/* Chỉ render các trường liên quan đến Task, không tra cứu tên nhân viên nếu chưa dùng tới */}
+      <TableCell>{task.assignedTo || ''}</TableCell>
+      <TableCell>{task.createdBy || ''}</TableCell>
     </TableRow>
   );
 });
 
+// Định nghĩa interface cho props của TaskTable
+interface TaskTableProps {
+  tasks: Task[];
+  editingId: string | null;
+  onEdit: (task: Task) => void;
+  selectedIds: string[];
+  onSelectIds: (ids: string[]) => void;
+}
+
 // Component bảng hiển thị danh sách task
-const TaskTable: React.FC<any> = ({ tasks, editingId, onEdit, selectedIds = [], onSelectIds }) => {
+const TaskTable: React.FC<TaskTableProps> = ({ tasks, editingId, onEdit, selectedIds, onSelectIds }) => {
   // Lấy dispatch từ store
   const dispatch = useAppDispatch();
   // State lưu dòng đang chỉnh sửa
@@ -354,7 +347,7 @@ const TaskTable: React.FC<any> = ({ tasks, editingId, onEdit, selectedIds = [], 
   // Xử lý khi bấm Edit
   const handleEdit = useCallback((task: Task) => {
     setEditRow({ ...task });
-    onEdit(task.id.toString());
+    onEdit(task); // truyền object task thay vì chỉ id
   }, [onEdit]);
 
   // Xử lý thay đổi input khi chỉnh sửa
@@ -366,13 +359,17 @@ const TaskTable: React.FC<any> = ({ tasks, editingId, onEdit, selectedIds = [], 
   // Xử lý lưu chỉnh sửa
   const handleSave = useCallback(() => {
     if (editRow && editRow.id !== undefined) {
-      dispatch(updateTaskAsync({ id: editRow.id.toString(), updates: editRow })).then(() => {
+      // Tìm task gốc theo id
+      const originalTask = tasks.find(t => t.id.toString() === editRow.id.toString());
+      // Gộp task gốc và editRow để đảm bảo đủ field
+      const updates = { ...originalTask, ...editRow };
+      dispatch(updateTaskAsync({ id: editRow.id.toString(), updates })).then(() => {
         dispatch(fetchTasks());
         dispatch(setEditing(null));
         setEditRow(null);
       });
     }
-  }, [dispatch, editRow]);
+  }, [dispatch, editRow, tasks]);
 
   // Xử lý hủy chỉnh sửa
   const handleCancel = useCallback(() => {
@@ -380,16 +377,8 @@ const TaskTable: React.FC<any> = ({ tasks, editingId, onEdit, selectedIds = [], 
     setEditRow(null);
   }, [dispatch]);
 
-  // Xử lý đánh dấu task là Done
-  const handleMarkDone = useCallback((id: string) => {
-    dispatch(updateTaskAsync({ id, updates: { status: 'Done' } })).then(() => {
-      dispatch(fetchTasks());
-    });
-  }, [dispatch]);
-
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const testBg = isDarkMode ? tinycolor('#e57373').lighten(30).toString() : '#e57373';
 
   // Hàm kiểm tra đã chọn hết chưa
   const isAllSelected = tasks.length > 0 && selectedIds.length === tasks.length;
@@ -412,14 +401,13 @@ const TaskTable: React.FC<any> = ({ tasks, editingId, onEdit, selectedIds = [], 
 
   // Render bảng task
   return (
-    <TableContainer component={Paper} sx={{ mb: 2 }}>
+    <TableContainer component={Paper} sx={{ width: '100%', mb: 2 }}>
       {/* XÓA Chip custom test style inline */}
       <Table>
         <TableHead>
           <TableRow>
-            {/* Cột riêng cho checkbox chọn task */}
-            <TableCell padding="checkbox">{/* Checkbox column */}</TableCell>
-            {/* Các cột dữ liệu đúng thứ tự */}
+            {/* Cột checkbox đầu dòng, không hiển thị checkbox chọn tất cả */}
+            <TableCell padding="checkbox"></TableCell>
             <TableCell>ID</TableCell>
             <TableCell>Priority</TableCell>
             <TableCell>Title</TableCell>
@@ -430,97 +418,27 @@ const TaskTable: React.FC<any> = ({ tasks, editingId, onEdit, selectedIds = [], 
             <TableCell>Labels</TableCell>
             <TableCell>Project</TableCell>
             <TableCell>Actions</TableCell>
+            <TableCell>Assigned To</TableCell>
+            <TableCell>Created By</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {/* Render từng dòng task, mỗi dòng có cột checkbox riêng biệt */}
           {tasks.map((task: Task) => (
-            <TableRow key={task.id} selected={editingId === task.id.toString()}>
-              {/* Cột checkbox riêng, không nằm trong cột ID */}
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selectedIds.includes(task.id.toString())}
-                  onChange={handleSelectRow(task.id.toString())}
-                />
-              </TableCell>
-              {/* Các cột dữ liệu đúng thứ tự */}
-              <TableCell>{task.id}</TableCell>
-              {/* Độ ưu tiên */}
-              <TableCell>
-                <CustomChip
-                  label={task.priority}
-                  bg={getPriorityChipStyle(task.priority, false).backgroundColor}
-                  color={getPriorityChipStyle(task.priority, false).color}
-                />
-              </TableCell>
-              {/* Tiêu đề task */}
-              <TableCell>{task.title}</TableCell>
-              {/* Mô tả task */}
-              <TableCell>{task.description}</TableCell>
-              {/* Ngày bắt đầu */}
-              <TableCell>{task.dayStarted}</TableCell>
-              {/* Ngày kết thúc */}
-              <TableCell>{task.dayExpired}</TableCell>
-              {/* Trạng thái task */}
-              <TableCell>
-                <CustomChip
-                  label={task.status}
-                  bg={getStatusChipStyle(task.status, false).backgroundColor}
-                  color={getStatusChipStyle(task.status, false).color}
-                />
-              </TableCell>
-              {/* Hiển thị các label (nếu có) */}
-              <TableCell>
-                <Stack direction="row" spacing={0.5}>
-                  {(task.labels ?? []).map((label, idx) => (
-                    <CustomChip
-                      key={idx}
-                      label={label}
-                      bg={getLabelProjectChipStyle(labelColorMap[label]).background}
-                      color={getLabelProjectChipStyle(labelColorMap[label]).color}
-                      fontSize={13}
-                      style={{ fontWeight: 700, borderRadius: 8, letterSpacing: 0.2, padding: '3px 10px' }}
-                    />
-                  ))}
-                </Stack>
-              </TableCell>
-              {/* Hiển thị các project (nếu có) */}
-              <TableCell>
-                <Stack direction="row" spacing={0.5}>
-                  {(task.projects ?? []).map((project, idx) => (
-                    <CustomChip
-                      key={idx}
-                      label={project}
-                      bg={getLabelProjectChipStyle(projectColorMap[project]).background}
-                      color={getLabelProjectChipStyle(projectColorMap[project]).color}
-                      fontSize={13}
-                      style={{ fontWeight: 700, borderRadius: 8, letterSpacing: 0.2, padding: '3px 10px' }}
-                    />
-                  ))}
-                </Stack>
-              </TableCell>
-              {/* Các nút thao tác: Edit, Delete, Mark as Done */}
-              <TableCell>
-                <Tooltip title="Edit">
-                  <IconButton
-                    onClick={() => onEdit(task)}
-                    sx={{ bgcolor: '#7c7fd6', color: '#fff', '&:hover': { bgcolor: '#5a5fa3' } }}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-                {task.status !== "Done" && (
-                  <Tooltip title="Mark as Done">
-                    <IconButton
-                      onClick={() => handleMarkDone(task.id.toString())}
-                      sx={{ bgcolor: '#43e97b', color: '#fff', '&:hover': { bgcolor: '#388e3c' } }}
-                    >
-                      <DoneIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </TableCell>
-            </TableRow>
+            <TaskRow
+              key={task.id}
+              task={task}
+              editingId={editingId}
+              editRow={editingId === task.id.toString() ? editRow : null}
+              onEdit={handleEdit}
+              onEditChange={handleEditChange}
+              onSave={handleSave}
+              onCancel={handleCancel}
+              labelColorMap={labelColorMap}
+              projectColorMap={projectColorMap}
+              selected={selectedIds.includes(task.id.toString())}
+              onSelect={handleSelectRow(task.id.toString())}
+              // Đã loại bỏ employees
+            />
           ))}
         </TableBody>
       </Table>

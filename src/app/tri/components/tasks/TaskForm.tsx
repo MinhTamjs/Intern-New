@@ -1,30 +1,35 @@
 // Import các thư viện React, MUI, Redux cần thiết
-import React, { useState } from "react";
-import { TextField, Button, MenuItem, Paper, Typography, Grid, Box, Chip, InputAdornment, IconButton } from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import { useAppDispatch, useAppSelector } from "./store";
-import { addTask, fetchTasks } from "../features/tasks/taskSlice";
-import { Priority, Status } from "../features/tasks/taskTypes";
-import CloseIcon from "@mui/icons-material/Close";
+import React, { useState, useEffect } from "react";
+import { TextField, Button, MenuItem, Paper, Typography, Grid, Box, Chip, InputAdornment, IconButton, Stack } from "@mui/material";
+// XÓA: import Autocomplete from "@mui/material/Autocomplete";
+// XÓA: import CloseIcon from "@mui/icons-material/Close";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { useAppDispatch, useAppSelector } from "../store";
+import { addTask, fetchTasks } from "../../features/tasks/taskSlice";
+import { getEmployees } from "../../features/tasks/taskApi";
+import type { Task, Employee, Status, Priority } from "../../../../types/schema";
 
 // Danh sách nhãn mẫu và dự án mẫu (có thể lấy từ API hoặc hardcode demo)
-const sampleProjects = ["E-commerce Website", "Study Management App", "Internal Project"];
+// XÓA: const sampleProjects = ["E-commerce Website", "Study Management App", "Internal Project"];
 
 // Giá trị mặc định cho form nhập task
+// Sửa defaultForm: labels, projects luôn là mảng
 const defaultForm = {
   title: "",
   description: "",
   dayStarted: "",
-  dayExpired: "",
+  dueDate: "",
   priority: "Medium" as Priority,
   status: "Pending" as Status,
-  labels: [] as string[],
-  projects: [] as string[], // Danh sách dự án cho task
+  labels: [] as string[], // Đảm bảo là mảng
+  projects: [] as string[], // Đảm bảo là mảng
+  assignedTo: "",
+  createdBy: "",
 };
 
 // Component form thêm mới task
-const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
+// Nhận employees từ props
+const TaskForm: React.FC<{ onFinish: () => void; employees: Employee[] }> = ({ onFinish, employees }) => {
   // State lưu giá trị form
   const [form, setForm] = useState(defaultForm);
   // State lưu lỗi nhập liệu
@@ -36,10 +41,22 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
   const dispatch = useAppDispatch();
   // Lấy danh sách task hiện tại từ store
   const tasks = useAppSelector(state => state.tasks.tasks);
+  // Lấy danh sách nhân viên từ API để chọn assignedTo/createdBy
+  // const [employees, setEmployees] = useState<Employee[]>([]); // Đã được truyền từ props
+
+  // useEffect(() => {
+  //   getEmployees().then(setEmployees);
+  // }, []);
 
   // Xử lý thay đổi input cơ bản (text, date, select)
+  // Sửa handleChange: nếu là labels/projects thì ép kiểu về mảng
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "labels" || name === "projects") {
+      setForm({ ...form, [name]: Array.isArray(value) ? value : [value] });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
   // Xử lý thay đổi nhãn (labels) - Autocomplete
   const handleLabelsChange = (_: any, value: string[]) => {
@@ -127,7 +144,7 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Kiểm tra các trường bắt buộc
-    if (!form.title || !form.description || !form.dayStarted || !form.dayExpired) {
+    if (!form.title || !form.description || !form.dayStarted || !form.dueDate) {
       setError("Please fill in all fields.");
       return;
     }
@@ -141,7 +158,8 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
     }
     try {
       // Gửi action thêm task
-      await dispatch(addTask(form)).unwrap();
+      // Sửa handleSubmit: đảm bảo labels, projects luôn là mảng khi gửi lên API
+      await dispatch(addTask({ ...form, labels: Array.isArray(form.labels) ? form.labels : [], projects: Array.isArray(form.projects) ? form.projects : [] })).unwrap();
       // Lấy lại danh sách task mới
       await dispatch(fetchTasks());
       // Reset form về mặc định
@@ -185,102 +203,89 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
         </Typography>
       )}
       <form onSubmit={handleSubmit}>
-        {/* Hàng 1: Title & Projects */}
-        <Grid container spacing={2} sx={{ mb: 1 }}>
-          <Grid item xs={12} md={8}>
-            {/* Nhập tiêu đề task */}
+        <Stack spacing={1.5}>
+          {/* Title */}
+          <TextField
+            name="title"
+            label="Title"
+            value={form.title}
+            onChange={handleChange}
+            fullWidth
+            size="small"
+            required
+          />
+          {/* Description - Mô tả task, nằm ngay dưới Title */}
+          <TextField
+            name="description"
+            label="Description"
+            value={form.description}
+            onChange={handleChange}
+            fullWidth
+            size="small"
+            multiline
+            minRows={2}
+            maxRows={4}
+            required
+          />
+          {/* Labels - Nhập/chọn nhiều label cho task bằng #hashtag */}
+          <TextField
+            label="Labels"
+            value={labelInput}
+            onChange={handleLabelInputChange}
+            onKeyDown={handleLabelInputKeyDown}
+            onBlur={handleLabelInputBlur}
+            fullWidth
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  {/* Khi render Chip cho labels/projects, luôn ép kiểu về mảng */}
+                  {(Array.isArray(form.labels) ? form.labels : []).map((label: string) => (
+                    <Chip
+                      key={label}
+                      label={label}
+                      size="small"
+                      onDelete={() => handleDeleteLabel(label)}
+                      sx={{ mr: 0.5 }}
+                    />
+                  ))}
+                </InputAdornment>
+              ),
+            }}
+            placeholder="Type #label to add (#urgent #bug)"
+          />
+          {/* Projects - Nhập/chọn nhiều project cho task bằng #hashtag */}
+          <TextField
+            label="Projects"
+            value={projectInput}
+            onChange={handleProjectInputChange}
+            onKeyDown={handleProjectInputKeyDown}
+            onBlur={handleProjectInputBlur}
+            fullWidth
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  {/* Khi render Chip cho labels/projects, luôn ép kiểu về mảng */}
+                  {(Array.isArray(form.projects) ? form.projects : []).map((project: string) => (
+                    <Chip
+                      key={project}
+                      label={project}
+                      size="small"
+                      onDelete={() => handleDeleteProject(project)}
+                      sx={{ mr: 0.5 }}
+                    />
+                  ))}
+                </InputAdornment>
+              ),
+            }}
+            placeholder="Type #project to add (#web #app)"
+          />
+          {/* Day Started & Day Expired trên cùng một hàng ngang */}
+          <Stack direction="row" spacing={1}>
             <TextField
-              name="title"
-              label="Title"
-              value={form.title}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-              required
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            {/* Nhập/chọn nhiều project cho task bằng #hashtag. Chỉ tạo khi nhấn Space, Comma, Enter hoặc blur. */}
-            <TextField
-              label="Projects"
-              value={projectInput}
-              onChange={handleProjectInputChange}
-              onKeyDown={handleProjectInputKeyDown} // Xử lý xác nhận hashtag
-              onBlur={handleProjectInputBlur} // Xử lý khi mất focus
-              fullWidth
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    {form.projects.map((project) => (
-                      <Chip
-                        key={project}
-                        label={project}
-                        size="small"
-                        onDelete={() => handleDeleteProject(project)}
-                        sx={{ mr: 0.5 }}
-                      />
-                    ))}
-                  </InputAdornment>
-                ),
-              }}
-              placeholder="Type #project to add (#web #app)"
-            />
-          </Grid>
-        </Grid>
-        {/* Hàng 2: Description & Labels */}
-        <Grid container spacing={2} sx={{ mb: 1 }}>
-          <Grid item xs={12} md={8}>
-            {/* Nhập mô tả task */}
-            <TextField
-              name="description"
-              label="Description"
-              value={form.description}
-              onChange={handleChange}
-              fullWidth
-              size="small"
-              multiline
-              minRows={2}
-              maxRows={4}
-              required
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            {/* Nhập/chọn nhiều label cho task bằng #hashtag. Chỉ tạo khi nhấn Space, Comma, Enter hoặc blur. */}
-            <TextField
-              label="Labels"
-              value={labelInput}
-              onChange={handleLabelInputChange}
-              onKeyDown={handleLabelInputKeyDown} // Xử lý xác nhận hashtag
-              onBlur={handleLabelInputBlur} // Xử lý khi mất focus
-              fullWidth
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    {form.labels.map((label) => (
-                      <Chip
-                        key={label}
-                        label={label}
-                        size="small"
-                        onDelete={() => handleDeleteLabel(label)}
-                        sx={{ mr: 0.5 }}
-                      />
-                    ))}
-                  </InputAdornment>
-                ),
-              }}
-              placeholder="Type #label to add (#urgent #bug)"
-            />
-          </Grid>
-        </Grid>
-        {/* Hàng 3: Start/End Date, Priority, Status */}
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            {/* Ngày bắt đầu */}
-            <TextField
+              label="Ngày bắt đầu"
               name="dayStarted"
-              label="Start Date"
               type="date"
               value={form.dayStarted}
               onChange={handleChange}
@@ -289,23 +294,20 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
               size="small"
               required
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            {/* Ngày kết thúc */}
             <TextField
-              name="dayExpired"
-              label="End Date"
+              label="Deadline"
+              name="dueDate"
               type="date"
-              value={form.dayExpired}
+              value={form.dueDate}
               onChange={handleChange}
               InputLabelProps={{ shrink: true }}
               fullWidth
               size="small"
               required
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            {/* Chọn độ ưu tiên */}
+          </Stack>
+          {/* Priority & Status trên cùng một hàng ngang */}
+          <Stack direction="row" spacing={1}>
             <TextField
               select
               name="priority"
@@ -319,9 +321,6 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
               <MenuItem value="Medium">Medium</MenuItem>
               <MenuItem value="Low">Low</MenuItem>
             </TextField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            {/* Chọn trạng thái task */}
             <TextField
               select
               name="status"
@@ -336,10 +335,10 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
               <MenuItem value="Done">Done</MenuItem>
               <MenuItem value="Expired">Expired</MenuItem>
             </TextField>
-          </Grid>
-        </Grid>
-        {/* Nút Add task với icon, nổi bật */}
-        <Box mt={2}>
+          </Stack>
+          {/* Dropdown chọn nhân viên */}
+          {/* Xóa các dropdown chọn nhân viên nếu chưa dùng tới */}
+          {/* Nút Add task với icon, nổi bật */}
           <Button
             type="submit"
             variant="contained"
@@ -351,7 +350,7 @@ const TaskForm: React.FC<{ onFinish: () => void }> = ({ onFinish }) => {
           >
             Add
           </Button>
-        </Box>
+        </Stack>
       </form>
     </Paper>
   );

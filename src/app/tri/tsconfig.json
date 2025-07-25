@@ -1,0 +1,41 @@
+{
+  // Cấu hình biên dịch TypeScript cho project React
+  "compilerOptions": {
+    // Target ES2015 để hỗ trợ Promise, Set, Array.from, ...
+    "target": "es2015",
+    // Thư viện mặc định: DOM, ESNext
+    "lib": ["dom", "dom.iterable", "esnext"],
+    // Module hệ thống ESNext
+    "module": "esnext",
+    // Hỗ trợ import module kiểu node
+    "moduleResolution": "node",
+    // Cho phép import mặc định từ các module CommonJS
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    // Kiểm tra strict toàn bộ code
+    "strict": true,
+    // Không cho phép lỗi phân biệt hoa thường tên file
+    "forceConsistentCasingInFileNames": true,
+    // Không kiểm tra lại các file .d.ts trong node_modules
+    "skipLibCheck": true,
+    // Không phát sinh file .js khi build (chỉ kiểm tra type)
+    "noEmit": true,
+    // Hỗ trợ JSX cho React 17+
+    "jsx": "react-jsx",
+    // Cho phép import file .json
+    "resolveJsonModule": true,
+    // Cho phép import file .ts/.tsx trong src bằng alias tuyệt đối
+    "baseUrl": "./src",
+    // Định nghĩa alias cho các thư mục thường dùng
+    "paths": {
+      "@components/*": ["app/tri/components/*"],
+      "@features/*": ["app/tri/features/*"],
+      "@types/*": ["types/*"],
+      "@utils/*": ["app/tri/utils/*"]
+    }
+  },
+  // Chỉ kiểm tra các file trong src
+  "include": ["."],
+  // Loại trừ node_modules
+  "exclude": ["node_modules"]
+}

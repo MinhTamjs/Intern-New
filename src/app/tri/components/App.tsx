@@ -1,17 +1,24 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "./store";
-import { deleteTaskAsync, setEditing, fetchTasks } from "../features/tasks/taskSlice";
-import TaskTable from "./TaskTable";
-import TaskForm from "./TaskForm";
-import TaskFilters from "./TaskFilters";
+import { deleteTaskAsync, setEditing, fetchTasks, updateTaskAsync } from "../features/tasks/taskSlice";
+import TaskTable from "./tasks/TaskTable";
+import TaskForm from "./tasks/TaskForm";
+import TaskFilters from "./tasks/TaskFilters";
 import LoadingError from "./LoadingError";
 import SplashScreen from './animations/SplashScreen';
 import AnimationWrapper from './animations/AnimationWrapper';
-import { Container, Typography, Box, ThemeProvider, createTheme, CssBaseline, IconButton } from "@mui/material";
+import { Container, Typography, Box, ThemeProvider, createTheme, CssBaseline, IconButton, Paper } from "@mui/material";
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { PaletteMode } from '@mui/material';
 import { motion } from 'framer-motion';
+import AddTaskBox from './tasks/AddTaskBox';
+import TaskListBox from './tasks/TaskListBox';
+import { getEmployees } from "../features/tasks/taskApi";
+import type { Employee } from "../../../types/schema";
+import Employees from "./employees/Employees";
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 
 const App: React.FC = () => {
   // Lấy danh sách task, id đang edit, filter từ Redux store
@@ -24,6 +31,12 @@ const App: React.FC = () => {
 
   // State lưu các task được chọn để xóa đồng loạt
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+
+  // State lấy danh sách nhân viên từ API để truyền xuống các component con
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  useEffect(() => {
+    getEmployees().then(setEmployees);
+  }, []);
 
   // State hiển thị splash screen khi vào app
   const [showSplash, setShowSplash] = React.useState(true);
@@ -51,14 +64,14 @@ const App: React.FC = () => {
     // Lọc theo nhiều nhãn: task.labels phải chứa ít nhất 1 nhãn trong filter.labels (OR logic, không phân biệt hoa thường/hoa, loại bỏ khoảng trắng)
     const matchLabels =
       !filter.labels || filter.labels.length === 0 ||
-      filter.labels.some(lab =>
-        (task.labels ?? []).some(tlab => tlab.trim().toLowerCase() === lab.trim().toLowerCase())
+      filter.labels.some((lab: string) =>
+        (Array.isArray(task.labels) ? task.labels : []).some((tlab: string) => tlab.trim().toLowerCase() === lab.trim().toLowerCase())
       );
     // Lọc theo nhiều dự án: task.projects phải chứa ít nhất 1 project trong filter.projects (OR logic, không phân biệt hoa thường/hoa, loại bỏ khoảng trắng)
     const matchProjects =
       !filter.projects || filter.projects.length === 0 ||
-      filter.projects.some(proj =>
-        (task.projects ?? []).some(tproj => tproj.trim().toLowerCase() === proj.trim().toLowerCase())
+      filter.projects.some((proj: string) =>
+        (Array.isArray(task.projects) ? task.projects : []).some((tproj: string) => tproj.trim().toLowerCase() === proj.trim().toLowerCase())
       );
     return matchKeyword && matchStatus && matchPriority && matchLabels && matchProjects;
   }), [tasks, filter]);
@@ -67,7 +80,7 @@ const App: React.FC = () => {
   const handleFinish = () => {};
 
   // Hàm xóa đồng loạt
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = async (): Promise<void> => {
     if (selectedIds.length === 0) return;
     for (const id of selectedIds) {
       await dispatch(deleteTaskAsync(id));
@@ -77,15 +90,18 @@ const App: React.FC = () => {
   };
 
   // Hàm chọn tất cả task đang hiển thị
-  const handleSelectAll = () => {
-    setSelectedIds(filteredTasks.map(t => t.id.toString()));
+  const handleSelectAll = (): void => {
+    setSelectedIds(filteredTasks.map((t: typeof tasks[0]) => t.id.toString()));
   };
 
   // State dark mode, lấy từ localStorage nếu có
-  const [isDarkMode, setIsDarkMode] = React.useState(() => {
+  const [isDarkMode, setIsDarkMode] = React.useState<boolean>(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+
+  // State điều hướng giữa QLCV và QLNV
+  const [showEmployees, setShowEmployees] = useState(false);
 
   // Theme cho light mode: chỉ áp dụng khi isDarkMode === false
   const lightThemeOptions = {
@@ -146,61 +162,77 @@ const App: React.FC = () => {
   };
 
   // Trả về splash hoặc giao diện chính dựa vào showSplash
-  return showSplash
-    ? <SplashScreen />
-    : (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          {/* Header với nút chuyển đổi dark/light */}
-          <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
-            <Typography variant="h4" align="center" gutterBottom flex={1}>
-              Task Management
-            </Typography>
-            <IconButton onClick={toggleDarkMode} color="inherit" sx={{ ml: 2 }}>
-              {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-          </Box>
-          <Box sx={{ mb: 3 }}>
-            {/* Hiệu ứng hiện dần từng phần bằng AnimationWrapper */}
-            <AnimationWrapper delay={0.1} duration={0.8}>
-              <TaskForm onFinish={handleFinish} />
-            </AnimationWrapper>
-            <AnimationWrapper delay={1.0} duration={0.8}>
-              <TaskFilters
-                selectedIds={selectedIds}
-                onBulkDelete={handleBulkDelete}
-                onSelectAll={handleSelectAll}
-                totalTasks={filteredTasks.length}
-              />
-            </AnimationWrapper>
-            <AnimationWrapper staggerChildren delay={2.0} duration={1.0}>
-              <LoadingError loading={loading} error={error} />
-              {/* Stagger từng dòng bảng: mỗi dòng là một motion.div */}
-              <TaskTable
-                tasks={filteredTasks}
-                editingId={editingId}
-                onEdit={id => dispatch(setEditing(id))}
-                selectedIds={selectedIds}
-                onSelectIds={setSelectedIds}
-                rowWrapper={rowProps => (
-                  <motion.div
-                    variants={{
-                      initial: { opacity: 0, y: 20 },
-                      animate: { opacity: 1, y: 0 },
-                      exit: { opacity: 0, y: -10 },
-                    }}
-                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  >
-                    {rowProps.children}
-                  </motion.div>
-                )}
-              />
-            </AnimationWrapper>
-          </Box>
-        </Container>
-      </ThemeProvider>
+  if (showSplash) return <SplashScreen />;
+  if (showEmployees) {
+    return (
+      <Box position="relative">
+        <Employees />
+        {/* Nút chuyển về QLCV ở góc dưới bên phải */}
+        <IconButton
+          onClick={() => setShowEmployees(false)}
+          sx={{ position: 'fixed', bottom: 32, right: 32, bgcolor: '#1976d2', color: '#fff', boxShadow: 3, '&:hover': { bgcolor: '#1565c0' } }}
+          size="large"
+        >
+          <AssignmentIcon />
+        </IconButton>
+      </Box>
     );
+  }
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header với nút chuyển đổi dark/light */}
+        <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
+          <Typography variant="h4" align="center" gutterBottom flex={1}>
+            Task Management
+          </Typography>
+          <IconButton onClick={toggleDarkMode} color="inherit" sx={{ ml: 2 }}>
+            {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Box>
+        {/* Bố cục 2 cột: Trái (Add Task), Phải (Task List + Filter) */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 4,
+            alignItems: 'flex-start',
+            flexWrap: { xs: 'wrap', md: 'nowrap' },
+            flexDirection: { xs: 'column', md: 'row' },
+            mb: 3
+          }}
+        >
+          {/* Box trái: Add New Task */}
+          <Box sx={{ flex: { xs: 'unset', md: '0 0 30%' }, maxWidth: { md: '30%' }, minWidth: 280 }}>
+            <AddTaskBox onFinish={handleFinish} />
+          </Box>
+          {/* Box phải: Task List + Filter */}
+          <Box sx={{ flex: 1, minWidth: 400 }}>
+            <TaskListBox
+              employees={employees}
+              filteredTasks={filteredTasks}
+              editingId={editingId}
+              loading={loading}
+              error={error}
+              selectedIds={selectedIds}
+              setSelectedIds={setSelectedIds}
+              onEdit={(task: typeof tasks[0]) => dispatch(setEditing(task.id.toString()))}
+              onBulkDelete={handleBulkDelete}
+              onSelectAll={handleSelectAll}
+            />
+          </Box>
+        </Box>
+        {/* Nút chuyển sang QLNV ở góc dưới bên phải */}
+        <IconButton
+          onClick={() => setShowEmployees(true)}
+          sx={{ position: 'fixed', bottom: 32, right: 32, bgcolor: '#43e97b', color: '#232a4d', boxShadow: 3, '&:hover': { bgcolor: '#388e3c', color: '#fff' } }}
+          size="large"
+        >
+          <PeopleAltIcon />
+        </IconButton>
+      </Container>
+    </ThemeProvider>
+  );
 };
 
 export default App; 

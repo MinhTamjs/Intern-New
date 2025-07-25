@@ -115,116 +115,90 @@ button, .MuiButton-root {
   }
 } 
 
-/* Dark mode overrides */
-/* DARK MODE: Gradient xanh tím sang trọng, dịu mắt */
+/* ===================== DARK MODE REFACTOR ===================== */
+/* Nền gradient tím-xanh cho toàn app */
 .dark-mode {
   background: linear-gradient(135deg, #232a4d 0%, #3a3f6d 100%) !important;
   color: #e0e6ff;
 }
-/* DARK MODE REFACTOR: Chỉ đổi màu nền, text chủ đạo, giữ lại style đẹp của light mode */
+/* Nền các thành phần chính tối hơn, có bóng nhẹ */
 .dark-mode .MuiPaper-root,
 .dark-mode .MuiBox-root,
 .dark-mode .MuiStack-root,
 .dark-mode .MuiContainer-root {
-  background: #f5f6fa !important;
-  color: #181a1b !important;
+  background: rgba(36, 40, 68, 0.96) !important; /* tím đậm mờ */
+  color: #e0e6ff !important;
+  box-shadow: 0 4px 24px 0 rgba(44,54,120,0.18);
 }
+/* Button: gradient tím-xanh, bóng nhẹ, hover sáng hơn */
 .dark-mode .MuiButton-root {
-  background: #7c7fd6 !important;
+  background: linear-gradient(90deg, #7c7fd6 0%, #43e97b 100%) !important;
   color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px 0 rgba(67,233,123,0.10);
+  font-weight: 700;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 .dark-mode .MuiButton-root:hover {
-  background: #5a5fa3 !important;
+  background: linear-gradient(90deg, #43e97b 0%, #7c7fd6 100%) !important;
+  box-shadow: 0 4px 16px 0 rgba(67,233,123,0.18);
 }
+/* Typography, label: trắng hoặc tím nhạt, tiêu đề có bóng nhẹ */
 .dark-mode .MuiTypography-root,
 .dark-mode .MuiTypography-h4,
 .dark-mode .MuiTypography-h6,
 .dark-mode .MuiInputLabel-root,
 .dark-mode .MuiFormLabel-root {
-  color: #5a5fa3 !important;
+  color: #e0e6ff !important;
+  text-shadow: 0 2px 8px #232a4d44, 0 2px 8px #fff1;
 }
-.dark-mode .MuiPaper-root .MuiChip-root,
-.dark-mode .MuiBox-root .MuiChip-root,
-.dark-mode .MuiStack-root .MuiChip-root {
-  background: #5a5fa3 !important;
+/* Chip: nền tím nhạt, chữ trắng, border tím sáng */
+.dark-mode .MuiChip-root {
+  background: #7c7fd6 !important;
   color: #fff !important;
-  border: 1px solid #7c7fd6 !important;
+  border: 1px solid #43e97b !important;
 }
-/* Không override input, combobox, table, chip trong table để giữ style light mode */
+/* Input, combobox: nền xám đậm, border tím nhạt, chữ sáng */
 .dark-mode .MuiTextField-root input,
 .dark-mode .MuiInputBase-input,
 .dark-mode .MuiOutlinedInput-root,
 .dark-mode .MuiAutocomplete-root .MuiOutlinedInput-root,
 .dark-mode .MuiSelect-root,
 .dark-mode .MuiSelect-select {
-  background: #fff !important;
-  color: #181a1b !important;
-  border: 1.5px solid #e0e0e0 !important;
+  background: #232a4d !important;
+  color: #e0e6ff !important;
+  border: 1.5px solid #7c7fd6 !important;
   border-radius: 8px;
 }
 .dark-mode .MuiInputBase-input::placeholder {
-  color: #888 !important;
+  color: #b2b7e2 !important;
   opacity: 1;
 }
-.dark-mode .MuiInputLabel-root,
-.dark-mode .MuiFormLabel-root {
-  color: #555 !important;
-}
 .dark-mode .MuiOutlinedInput-notchedOutline {
-  border-color: #e0e0e0 !important;
+  border-color: #7c7fd6 !important;
 }
-/* DARK MODE: Button đồng bộ với background tím đậm */
-.dark-mode .MuiButton-root {
-  background: #5a5fa3 !important;
-  color: #fff !important;
-  border: none !important;
-  box-shadow: 0 2px 8px 0 rgba(44, 54, 120, 0.10);
-  font-weight: 700;
-  border-radius: 8px;
-  letter-spacing: 0.5px;
-  transition: background 0.2s;
-}
-.dark-mode .MuiButton-root:hover {
-  background: #7c7fd6 !important;
-}
-
-/* DARK MODE: Label, title, label input, combobox sang tím đậm */
-.dark-mode .MuiTypography-root,
-.dark-mode .MuiTypography-h4,
-.dark-mode .MuiTypography-h6,
-.dark-mode .MuiInputLabel-root,
-.dark-mode .MuiFormLabel-root {
-  color: #5a5fa3 !important;
-}
-.dark-mode .MuiAutocomplete-root .MuiOutlinedInput-root {
-  background: #fff !important;
-  color: #181a1b !important;
-  border: 1.5px solid #e0e0e0 !important;
-}
-.dark-mode .MuiAutocomplete-root .MuiAutocomplete-inputRoot {
-  color: #181a1b !important;
-}
-.dark-mode .MuiAutocomplete-root .MuiChip-root {
-  background: #e0e0e0 !important;
-  color: #181a1b !important;
-}
-/* XÓA override màu table ở dark mode để giữ nguyên màu LightMode */
+/* Table: nền xám đậm, chữ trắng, border tím nhạt */
 .dark-mode .MuiTable-root,
 .dark-mode .MuiTableCell-root,
 .dark-mode .MuiTableHead-root .MuiTableCell-root {
-  background: unset !important;
-  color: unset !important;
-  border-color: unset !important;
-  font-weight: unset !important;
-  border-bottom: unset !important;
+  background: #232a4d !important;
+  color: #e0e6ff !important;
+  border-color: #7c7fd6 !important;
+  font-weight: 500 !important;
+  border-bottom: 1.5px solid #7c7fd6 !important;
   box-shadow: unset !important;
 }
-.dark-mode .MuiSvgIcon-root {
-  color: #a3a8f7 !important;
-}
+/* Tooltip: nền tím đậm, chữ trắng */
 .dark-mode .MuiTooltip-tooltip {
   background: #3a3f6d !important;
   color: #e0e6ff !important;
+  box-shadow: 0 2px 8px 0 #232a4d55;
+}
+/* Icon: tím sáng */
+.dark-mode .MuiSvgIcon-root {
+  color: #43e97b !important;
 }
 
 /* ===== Hiển thị đường kẻ ngang đậm rõ rệt, loại bỏ ghi đè border-bottom ===== */
@@ -248,3 +222,17 @@ button, .MuiButton-root {
   border-bottom: unset;
 }
 /* =================================================================== */
+
+/* Nút Delete all: nền cam bóng (gradient), chữ trắng, nổi bật */
+.delete-all-btn {
+  background: linear-gradient(90deg, #ffb347 0%, #ff9800 100%) !important; /* gradient cam bóng */
+  color: #fff !important;         /* chữ trắng */
+  font-weight: 700;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px 0 rgba(255,152,0,0.25); /* bóng nổi bật hơn */
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.delete-all-btn:hover {
+  background: linear-gradient(90deg, #ff9800 0%, #ffb347 100%) !important; /* đảo gradient khi hover */
+  box-shadow: 0 6px 24px 0 rgba(255,152,0,0.35);
+}

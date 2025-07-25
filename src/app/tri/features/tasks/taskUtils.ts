@@ -1,4 +1,4 @@
-import { Task } from "./taskTypes";
+// Đã xóa import thừa Task, Employee vì không dùng trong file này
 
 /**
  * Hàm tiện ích trả về base URL cho một collection (ví dụ: 'tasks' -> '/api/tasks')
