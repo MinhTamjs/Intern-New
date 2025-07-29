@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { createTask } from '../features/tasks/taskSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { createTask, fetchTasks } from '../features/tasks/taskSlice';
 import {
   Card, CardContent, Typography, TextField, Button, MenuItem, Grid, InputLabel, Select, FormControl, Box
 } from '@mui/material';
@@ -18,25 +18,54 @@ const TaskForm = () => {
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState('');
   const [endDate, setEndDate] = useState(null);
+  const [localError, setLocalError] = useState('');
   const dispatch = useDispatch();
+  const error = useSelector(state => state.tasks.error);
+  const tasks = useSelector(state => state.tasks.tasks);
 
-  const handleSubmit = (e) => {
+  // Reset lỗi khi người dùng thay đổi input
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+    setLocalError('');
+  };
+  const handlePriorityChange = (e) => {
+    setPriority(e.target.value);
+    setLocalError('');
+  };
+  const handleEndDateChange = (date) => {
+    setEndDate(date);
+    setLocalError('');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError('');
     if (title && priority && endDate) {
-      dispatch(createTask({
+      // Kiểm tra trùng tên trên state Redux
+      if (tasks.some(t => t.title.trim().toLowerCase() === title.trim().toLowerCase())) {
+        setLocalError('Task đã tồn tại!');
+        return;
+      }
+      const resultAction = await dispatch(createTask({
         title,
         priority,
         endDate: endDate.format('YYYY-MM-DD'),
         completed: false,
       }));
-      setTitle('');
-      setPriority('');
-      setEndDate(null);
+      // Nếu tạo task thành công (fulfilled), reset form và fetch lại danh sách
+      if (createTask.fulfilled.match(resultAction)) {
+        setTitle('');
+        setPriority('');
+        setEndDate(null);
+        await dispatch(fetchTasks());
+      } else if (resultAction.payload) {
+        setLocalError(resultAction.payload);
+      }
     }
   };
 
   return (
-    <Card sx={{ mb: 4, borderRadius: 0, boxShadow: 2, p: 0.2, maxWidth: 1060, mx: 'auto', width: '100%', background: '#fff', border: '4px solid #1976d2', fontSize: '0.85rem' }}>
+    <Card sx={{ mb: 4, borderRadius: 0, boxShadow: 2, p: 0.2, maxWidth: 1060, mx: 'auto', width: '100%', background: '#e0ffff', border: '4px solid #1976d2', fontSize: '0.85rem' }}>
       <CardContent sx={{ p: 0.7 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', mb: 0.5 }}>
           <Typography variant="subtitle2" fontWeight={700} gutterBottom align="center" sx={{ width: '100%', fontSize: '0.95rem' }}>
@@ -44,13 +73,21 @@ const TaskForm = () => {
           </Typography>
         </Box>
         <Box component="form" onSubmit={handleSubmit} autoComplete="off" sx={{ width: '100%' }}>
+          {/* Hiển thị lỗi nếu có */}
+          {(localError || error) && (
+            <Box sx={{ mb: 1 }}>
+              <Typography color="error" variant="body2" fontWeight={600} align="center">
+                {localError || error}
+              </Typography>
+            </Box>
+          )}
           <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 0, gap: 0, width: '100%' }}>
             <Box sx={{ flex: 1, px: 1, display: 'flex', alignItems: 'center' }}>
               <TextField
                 label="Tiêu đề công việc"
                 fullWidth
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={handleTitleChange}
                 required
                 variant="outlined"
                 sx={{
@@ -71,7 +108,7 @@ const TaskForm = () => {
                   labelId="priority-label"
                   value={priority}
                   label="Mức độ ưu tiên"
-                  onChange={(e) => setPriority(e.target.value)}
+                  onChange={handlePriorityChange}
                   sx={{ height: 56 }}
                 >
                   {PRIORITY_OPTIONS.map(opt => (
@@ -85,7 +122,7 @@ const TaskForm = () => {
                 <DatePicker
                   label="Ngày hết hạn"
                   value={endDate}
-                  onChange={setEndDate}
+                  onChange={handleEndDateChange}
                   format="DD/MM/YYYY"
                   slotProps={{ textField: { fullWidth: true, required: true, sx: { height: 56, '.MuiInputBase-root': { height: 56, boxSizing: 'border-box', alignItems: 'center' }, '.MuiOutlinedInput-input': { p: '16.5px 14px' } } } }}
                 />
