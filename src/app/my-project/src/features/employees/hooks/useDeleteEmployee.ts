@@ -10,7 +10,7 @@ export function useDeleteEmployee() {
       await axios.delete(`${API_BASE_URL}/employees/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['employees']);
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     },
   });
 }

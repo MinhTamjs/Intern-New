@@ -3,29 +3,38 @@
 import { useState } from 'react';
 import { useEmployees } from '../hooks/useEmployees';
 import { useDeleteEmployee } from '../hooks/useDeleteEmployee';
-import { Employee } from '../types';
+import { useCreateEmployee } from '../hooks/useCreateEmployee';
+import { useUpdateEmployee } from '../hooks/useUpdateEmployee';
+import type { Employee } from '../types';
 import { EmployeeFormDialog } from './EmployeeFormDialog';
 import { Button } from '../../../components/ui/button';
-import { Dialog, DialogTrigger } from '../../../components/ui/dialog';
-import { PencilIcon, TrashIcon, PlusIcon } from 'lucide-react';
+import { TrashIcon } from 'lucide-react';
 
 export function EmployeeManager() {
   const { data: employees = [] } = useEmployees();
   const deleteEmployee = useDeleteEmployee();
+  const createEmployee = useCreateEmployee();
+  const updateEmployee = useUpdateEmployee();
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  const handleCreateEmployee = (data: Omit<Employee, 'id'>) => {
+    createEmployee.mutate(data);
+  };
+
+  const handleUpdateEmployee = (data: Omit<Employee, 'id'>) => {
+    if (editingEmployee) {
+      updateEmployee.mutate({ id: editingEmployee.id, ...data });
+      setEditingEmployee(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
       {/* Add Employee Button */}
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="flex items-center gap-2">
-            <PlusIcon size={16} />
-            Add Employee
-          </Button>
-        </DialogTrigger>
-        <EmployeeFormDialog />
-      </Dialog>
+      <EmployeeFormDialog 
+        triggerLabel="Thêm nhân viên"
+        onSubmit={handleCreateEmployee}
+      />
 
       {/* Employee List */}
       <div className="space-y-2">
@@ -36,23 +45,16 @@ export function EmployeeManager() {
           >
             <div>
               <p className="font-medium">{employee.name}</p>
-              <p className="text-sm text-gray-500">{employee.role}</p>
+              <p className="text-sm text-gray-500">{employee.position}</p>
             </div>
 
             <div className="flex gap-2">
               {/* Edit Button */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setEditingEmployee(employee)}
-                  >
-                    <PencilIcon size={16} />
-                  </Button>
-                </DialogTrigger>
-                <EmployeeFormDialog employee={editingEmployee} />
-              </Dialog>
+              <EmployeeFormDialog 
+                triggerLabel="Sửa"
+                initialData={employee}
+                onSubmit={handleUpdateEmployee}
+              />
 
               {/* Delete Button */}
               <Button

@@ -20,7 +20,7 @@ import {
   SelectContent,
   SelectItem,
 } from '../../../components/ui/select';
-import { toast } from 'sonner';
+import { toast as showToast } from 'sonner';
 import { useAuth } from '../../../lib/auth';
 
 export function TaskForm() {
@@ -33,7 +33,7 @@ export function TaskForm() {
   const { data: employees = [] } = useEmployees();
   const createTask = useCreateTask();
 
-  const isAllowed = ['admin', 'manager'].includes(currentUser.role);
+  const isAllowed = ['admin', 'manager'].includes(currentUser.position);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -47,9 +47,7 @@ export function TaskForm() {
       },
       {
         onSuccess: () => {
-          toast({
-            title: '✅ Tạo task thành công!',
-          });
+          showToast('✅ Tạo task thành công!');
           // Clear form
           setTitle('');
           setDescription('');
@@ -57,10 +55,7 @@ export function TaskForm() {
           setOpen(false); // 🔹 Tự động đóng form
         },
         onError: () => {
-          toast({
-            title: '❌ Lỗi khi tạo task!',
-            variant: 'destructive',
-          });
+          showToast('❌ Lỗi khi tạo task!');
         },
       }
     );

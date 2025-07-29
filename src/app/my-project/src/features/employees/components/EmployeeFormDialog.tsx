@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import { Employee } from '../types';
+import type { Employee } from '../types';
 
 interface EmployeeFormDialogProps {
   triggerLabel: string;
@@ -17,20 +17,32 @@ export function EmployeeFormDialog({
   onSubmit,
 }: EmployeeFormDialogProps) {
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const [email, setEmail] = useState('');
+  const [position, setPosition] = useState<'admin' | 'manager' | 'employee'>('employee');
+  const [department, setDepartment] = useState('');
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
-      setRole(initialData.role);
+      setEmail(initialData.email);
+      setPosition(initialData.position);
+      setDepartment(initialData.department);
     }
   }, [initialData]);
 
   const handleSubmit = () => {
-    if (!name.trim() || !role.trim()) return;
-    onSubmit({ name, role });
+    if (!name.trim() || !email.trim() || !department.trim()) return;
+    onSubmit({ 
+      name, 
+      email, 
+      position, 
+      department, 
+      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}` 
+    });
     setName('');
-    setRole('');
+    setEmail('');
+    setPosition('employee');
+    setDepartment('');
   };
 
   return (
@@ -49,10 +61,24 @@ export function EmployeeFormDialog({
             onChange={(e) => setName(e.target.value)}
           />
           <Input
-            placeholder="Vai trò (Admin, Staff...)"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
+          <Input
+            placeholder="Phòng ban"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+          />
+          <select
+            value={position}
+            onChange={(e) => setPosition(e.target.value as 'admin' | 'manager' | 'employee')}
+            className="w-full p-2 border rounded"
+          >
+            <option value="employee">Nhân viên</option>
+            <option value="manager">Quản lý</option>
+            <option value="admin">Admin</option>
+          </select>
         </div>
         <DialogFooter>
           <Button onClick={handleSubmit}>

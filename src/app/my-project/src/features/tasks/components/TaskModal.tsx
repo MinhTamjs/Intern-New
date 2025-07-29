@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { useEmployees } from '@/features/employees/hooks/useEmployees';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Textarea } from '../../../components/ui/textarea';
+import { Label } from '../../../components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../../components/ui/select';
+import { useEmployees } from '../../employees/hooks/useEmployees';
 import { useAssignTask } from '../hooks/useAssignTask';
-import { useDeleteTask } from '../useDeleteTask';
-import { TASK_STATUSES, type TaskStatus } from '@/lib/constants';
+import { useDeleteTask } from '../hooks/useDeleteTask';
+import { TASK_STATUSES, type TaskStatus } from '../../../lib/constants';
 import { toast } from 'sonner';
-import { isAdmin } from '@/lib/auth';
+import { isAdmin } from '../../../lib/auth';
+import type { User } from '../../../lib/auth';
 
 interface TaskModalProps {
   task: {
@@ -20,7 +21,7 @@ interface TaskModalProps {
     assigneeId: string;
     status: TaskStatus;
   };
-  currentUser: { role: string };
+  currentUser: User;
   trigger: React.ReactNode;
 }
 

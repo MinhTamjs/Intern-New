@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { API_BASE_URL } from '../../../lib/api';
-import { Employee } from '../types';
+import type { Employee } from '../types';
 
 export function useCreateEmployee() {
   const queryClient = useQueryClient();
@@ -12,7 +12,7 @@ export function useCreateEmployee() {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['employees']);
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     },
   });
 }

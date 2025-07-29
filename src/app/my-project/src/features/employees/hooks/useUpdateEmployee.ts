@@ -12,7 +12,7 @@ export function useUpdateEmployee() {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['employees']);
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     },
   });
 }

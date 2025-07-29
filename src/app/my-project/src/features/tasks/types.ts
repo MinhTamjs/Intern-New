@@ -5,7 +5,7 @@ export interface Task {
     title: string;
     description?: string;
     assignedTo: string | null;
-    status: 'pending' | 'in-progress' | 'done';
+    status: 'pending' | 'in-progress' | 'in-review' | 'done';
     dueDate?: string;
   }
   

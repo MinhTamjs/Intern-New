@@ -17,7 +17,7 @@ export function useAssignTask() {
   return useMutation({
     mutationFn: async ({ id, status }: UpdateTaskStatusInput) => {
       console.log('🟡 Updating task', id, 'to', status);
-      const res = await axios.patch(`${API_BASE_URL}/tasks/${id}`, {status,});
+      const res = await axios.put(`${API_BASE_URL}/tasks/${id}`, {status,});
       console.log('🟢 Updated:', res.data);
       return res.data;
     },
