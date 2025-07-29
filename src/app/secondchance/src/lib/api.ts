@@ -17,10 +17,12 @@ export const API_CONFIG = {
 class ApiClient {
   private baseURL: string;
   private defaultHeaders: HeadersInit;
+  private timeout: number;
 
-  constructor(baseURL: string, defaultHeaders: HeadersInit = {}) {
+  constructor(baseURL: string, defaultHeaders: HeadersInit = {}, timeout: number = 10000) {
     this.baseURL = baseURL;
     this.defaultHeaders = defaultHeaders;
+    this.timeout = timeout;
   }
 
   private async request<T>(
@@ -36,13 +38,35 @@ class ApiClient {
       ...options,
     };
 
-    const response = await fetch(url, config);
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout');
+        }
+        throw error;
+      }
+      
+      throw new Error('Unknown error occurred');
     }
-
-    return response.json();
   }
 
   async get<T>(endpoint: string): Promise<T> {

@@ -1,93 +1,94 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { taskAPI } from '../taskAPI';
+import { api } from '../../../lib/api';
 import { generateTimestamp } from '../../../lib/utils';
-import type { UpdateTaskData, Task, CreateTaskData } from '../types';
+import type { Task, CreateTaskData, UpdateTaskData } from '../types';
 
-export const useTasks = () => {
+export function useTasks() {
   return useQuery({
     queryKey: ['tasks'],
-    queryFn: taskAPI.getAll,
+    queryFn: api.tasks.getAll,
+    retry: (failureCount, error) => {
+      // Retry up to 3 times for network errors
+      if (failureCount < 3 && error instanceof Error && error.message.includes('network')) {
+        return true;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
   });
-};
+}
 
-export const useTasksByAssignee = (assigneeId: string) => {
-  return useQuery({
-    queryKey: ['tasks', 'assignee', assigneeId],
-    queryFn: () => taskAPI.getByAssignee(assigneeId),
-    enabled: !!assigneeId,
-  });
-};
-
-export const useCreateTask = () => {
+export function useCreateTask() {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: (data: CreateTaskData) => {
-      // Add timestamps for task creation
-      const taskWithTimestamps = {
+      // Ensure default values are set
+      const taskData = {
         ...data,
-        createdAt: generateTimestamp(),
-        updatedAt: generateTimestamp(),
+        status: data.status || 'pending',
+        createdAt: data.createdAt || generateTimestamp(),
+        updatedAt: data.updatedAt || generateTimestamp(),
       };
-      console.log('Creating task with timestamps:', taskWithTimestamps);
-      return taskAPI.create(taskWithTimestamps);
+      return api.tasks.create(taskData);
     },
     onSuccess: (newTask) => {
-      console.log('Task created successfully:', newTask);
-      // Invalidate and refetch tasks
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      
-      // Optionally, optimistically update the cache
+      // Optimistically update the cache
       queryClient.setQueryData(['tasks'], (oldTasks: Task[] = []) => {
-        console.log('Updating cache with new task:', newTask);
         return [...oldTasks, newTask];
       });
     },
     onError: (error) => {
-      console.error('Task creation failed:', error);
+      console.error('Failed to create task:', error);
+      // Invalidate and refetch on error
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
-};
+}
 
-export const useUpdateTask = () => {
+export function useUpdateTask() {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTaskData }) => {
-      // Add updatedAt timestamp for task updates
-      const updateDataWithTimestamp = {
+      // Ensure updatedAt is set
+      const updateData = {
         ...data,
-        updatedAt: generateTimestamp(),
+        updatedAt: data.updatedAt || generateTimestamp(),
       };
-      console.log('Updating task with timestamp:', { id, data: updateDataWithTimestamp });
-      return taskAPI.update(id, updateDataWithTimestamp);
+      return api.tasks.update(id, updateData);
     },
     onSuccess: (updatedTask) => {
-      console.log('Task updated successfully:', updatedTask);
-      
-      // Invalidate and refetch tasks
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      
-      // Also optimistically update the cache with the new task data
+      // Optimistically update the cache
       queryClient.setQueryData(['tasks'], (oldTasks: Task[] = []) => {
-        return oldTasks.map(task => 
-          task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-        );
+        return oldTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
       });
     },
     onError: (error) => {
-      console.error('Task update failed:', error);
-    },
-  });
-};
-
-export const useDeleteTask = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: taskAPI.delete,
-    onSuccess: () => {
+      console.error('Failed to update task:', error);
+      // Invalidate and refetch on error
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
-}; 
+}
+
+export function useDeleteTask() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: api.tasks.delete,
+    onSuccess: (_, deletedTaskId) => {
+      // Optimistically remove from cache
+      queryClient.setQueryData(['tasks'], (oldTasks: Task[] = []) => {
+        return oldTasks.filter(task => task.id !== deletedTaskId);
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to delete task:', error);
+      // Invalidate and refetch on error
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+} 

@@ -6,7 +6,7 @@ import { Button } from './components/ui/button';
 import { Avatar, AvatarFallback } from './components/ui/avatar';
 import { Badge } from './components/ui/badge';
 import { TaskBoard } from './features/kanban';
-import { TaskModal, TaskForm } from './features/tasks';
+import { TaskModal, CreateTaskModal } from './features/tasks';
 import { EmployeeFormDialog } from './features/employees';
 import { useEmployees, useCreateEmployee } from './features/employees';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from './features/tasks';
@@ -14,6 +14,7 @@ import { RoleSwitcher } from './components/RoleSwitcher';
 import { AuditLog } from './components/AuditLog';
 import { EmployeeManagement } from './pages/EmployeeManagement';
 import { ZiraLogo } from './components/ZiraLogo';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { createDemoUser, getRolePermissions } from './lib/roleManager';
 import { auditLogService, auditLogHelpers } from './lib/auditLog';
 import type { Task, TaskStatus, UpdateTaskData, CreateTaskData } from './features/tasks';
@@ -82,7 +83,7 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     }
     
     console.log('=== End Dashboard Debug ===');
-  }, [currentRole, currentUser, permissions, allTasks, employees]);
+  }, [currentRole, currentUser.id, permissions, allTasks.length, employees.length]);
 
   // Filter tasks based on user role
   const tasks = permissions.canViewAllTasks 
@@ -98,12 +99,12 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     console.log('Current user ID:', currentUser.id);
     
     if (!permissions.canViewAllTasks) {
-      const assignedTasks = allTasks.filter(task => task.assigneeId === currentUser.id);
-      console.log('Tasks assigned to current user:', assignedTasks);
+      const userTasks = allTasks.filter(task => task.assigneeId === currentUser.id);
+      console.log('Tasks assigned to current user:', userTasks);
     }
     
     console.log('=== End Task Filtering Debug ===');
-  }, [allTasks, tasks, permissions.canViewAllTasks, currentUser.id]);
+  }, [allTasks.length, tasks.length, permissions.canViewAllTasks, currentUser.id]);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -112,14 +113,32 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
 
   const handleTaskStatusChange = (taskId: string, newStatus: TaskStatus) => {
     const task = allTasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task) {
+      console.error('Task not found for status change:', taskId);
+      toast.error('Task not found');
+      return;
+    }
 
+    // Prevent unnecessary updates
+    if (task.status === newStatus) {
+      console.log('Task status unchanged:', taskId, newStatus);
+      return;
+    }
+
+    const previousStatus = task.status;
+    
     updateTaskMutation.mutate(
-      { id: taskId, data: { status: newStatus } },
+      { 
+        id: taskId, 
+        data: { 
+          status: newStatus,
+          updatedAt: new Date().toISOString()
+        } 
+      },
       {
         onSuccess: () => {
-          auditLogHelpers.taskStatusChanged(taskId, task.title, task.status, newStatus, currentRole);
-          toast.success('Task status updated successfully');
+          auditLogHelpers.taskMoved(taskId, task.title, previousStatus, newStatus, currentRole);
+          toast.success(`Task moved to ${newStatus.replace('-', ' ')}`);
         },
         onError: (error) => {
           toast.error('Failed to update task status');
@@ -241,38 +260,67 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     toast.success(`Switched to ${newRole} role`);
   };
 
-  const handleClearAuditLogs = () => {
-    auditLogService.clearLogs();
-    toast.success('Audit logs cleared');
-  };
-
-  // Loading state
+  // Show loading state
   if (employeesLoading || tasksLoading) {
     return (
-              <div className="flex flex-col items-center justify-center h-screen gap-4">
-          <ZiraLogo size={48} variant="sky" />
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
-          <span className="text-xl font-semibold text-muted-foreground">Loading ZIRA...</span>
-          <p className="text-gray-600">Setting up your workspace</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <ZiraLogo size={48} />
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading ZIRA...</p>
         </div>
+      </div>
     );
   }
 
-  // Error state
+  // Show error state
   if (employeesError || tasksError) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <ZiraLogo size={48} variant="sky" />
-        <h2 className="text-2xl font-bold text-red-600">ZIRA encountered an error</h2>
-        <p className="text-gray-600 text-center max-w-md">
-          {employeesError?.message || tasksError?.message}
-        </p>
-        <Button 
-          onClick={() => window.location.reload()} 
-          variant="outline"
-        >
-          Try Again
-        </Button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="flex justify-center mb-6">
+            <ZiraLogo size={48} />
+          </div>
+          
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Connection Error
+          </h1>
+          
+          <p className="text-gray-600 mb-6">
+            Unable to load data from the server. Please check your connection and try again.
+          </p>
+          
+          <div className="space-y-3">
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full"
+            >
+              Retry
+            </Button>
+          </div>
+          
+          {(employeesError || tasksError) && (
+            <details className="mt-6 text-left">
+              <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                Error Details
+              </summary>
+              <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono text-red-600">
+                {employeesError && (
+                  <div className="mb-2">
+                    <strong>Employees Error:</strong> {employeesError.message}
+                  </div>
+                )}
+                {tasksError && (
+                  <div>
+                    <strong>Tasks Error:</strong> {tasksError.message}
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
+        </div>
       </div>
     );
   }
@@ -359,7 +407,6 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
           <div className="mb-6">
             <AuditLog 
               logs={auditLogService.getLogs()} 
-              onClearLogs={handleClearAuditLogs}
             />
           </div>
         )}
@@ -397,12 +444,13 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
         isLoading={createEmployeeMutation.isPending}
       />
 
-      <TaskForm
+      {/* Create Task Modal */}
+      <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => setIsCreateTaskModalOpen(false)}
         onSubmit={handleCreateTask}
-        isLoading={createTaskMutation.isPending}
         employees={employees}
+        isLoading={createTaskMutation.isPending}
       />
 
       <Toaster />
@@ -414,19 +462,22 @@ function AppContent() {
   const [currentRole, setCurrentRole] = useState<Role>('admin');
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard currentRole={currentRole} onRoleChange={setCurrentRole} />} />
-        <Route path="/employees" element={<EmployeeManagement currentRole={currentRole} />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<Dashboard currentRole={currentRole} onRoleChange={setCurrentRole} />} />
+      <Route path="/employees" element={<EmployeeManagement currentRole={currentRole} />} />
+    </Routes>
   );
 }
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <AppContent />
+        </Router>
+        <Toaster position="top-right" />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

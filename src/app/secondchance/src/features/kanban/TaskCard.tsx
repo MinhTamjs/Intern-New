@@ -89,22 +89,22 @@ export function TaskCard({ task, assignee, onClick }: TaskCardProps) {
       <CardContent className="p-0.5">
         <div className="flex items-center justify-between">
           {/* Task content - left-aligned with minimal spacing */}
-          <div className="flex-1 min-w-0">
-            {/* Task title - larger, readable font size */}
-            <h3 className="text-[12px] font-medium text-gray-900 leading-tight text-left break-words">
+          <div className="flex-1 min-w-0 pl-2">
+            {/* Task title - smaller font size (previously description size) */}
+            <h3 className="text-[9px] font-medium text-gray-900 leading-tight text-left break-words">
               {task.title}
             </h3>
             
-            {/* Task description - larger, readable font size */}
+            {/* Task description - larger font size (previously title size) */}
             {task.description && task.description.trim() !== '' && (
-              <p className="text-[9px] text-gray-600 leading-tight text-left line-clamp-1 break-words mt-0.5">
+              <p className="text-[12px] text-gray-600 leading-tight text-left line-clamp-1 break-words mt-0.5">
                 {task.description}
               </p>
             )}
           </div>
           
           {/* JIRA-style assignee avatar group */}
-          <div className="flex-shrink-0 ml-0.5">
+          <div className="flex-shrink-0 ml-0.5 pr-2">
             {assignees.length > 0 ? (
               <TooltipProvider>
                 <Tooltip>

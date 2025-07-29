@@ -77,7 +77,7 @@ export function debugDate(dateString: string | null | undefined) {
  * @returns Formatted date string or fallback text
  */
 export function formatUnixTimestamp(unixTimestamp: number | null | undefined, fallback: string = "Not set"): string {
-  if (!unixTimestamp) {
+  if (!unixTimestamp || typeof unixTimestamp !== 'number') {
     return fallback;
   }
 
@@ -176,6 +176,41 @@ export function formatDateCompact(dateString: string | null | undefined, fallbac
     });
   } catch (error) {
     console.warn('formatDateCompact: Error formatting date:', dateString, error);
+    return fallback;
+  }
+}
+
+/**
+ * Formats a date string for audit log display with both date and time
+ * @param dateString - The date string to format
+ * @param fallback - Fallback text if date is invalid (default: "Time not available")
+ * @returns Formatted date and time string or fallback text
+ */
+export function formatAuditLogDate(dateString: string | null | undefined, fallback: string = "Time not available"): string {
+  if (!dateString) {
+    return fallback;
+  }
+
+  try {
+    const date = new Date(dateString);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return fallback;
+    }
+
+    // Format the date for audit log display
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    console.warn('formatAuditLogDate: Error formatting date:', dateString, error);
     return fallback;
   }
 }

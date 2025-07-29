@@ -130,6 +130,9 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
         activeId: event.active.id,
         availableTaskIds: tasks.map(t => t.id)
       });
+      // Reset state if task not found
+      setActiveTask(null);
+      setOriginalStatus(null);
     }
   };
 

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { taskAPI } from '../../tasks/taskAPI';
+import { api } from '../../../lib/api';
 
-export const useEmployeeTasks = (employeeId: string) => {
+export function useEmployeeTasks(assigneeId: string) {
   return useQuery({
-    queryKey: ['tasks', 'employee', employeeId],
-    queryFn: () => taskAPI.getByAssignee(employeeId),
-    enabled: !!employeeId,
+    queryKey: ['tasks', 'assignee', assigneeId],
+    queryFn: () => api.tasks.getByAssignee(assigneeId),
+    enabled: !!assigneeId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
-}; 
+} 

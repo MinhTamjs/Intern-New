@@ -1,18 +1,5 @@
-// Export types
-export type { Task, CreateTaskData, UpdateTaskData, TaskStatus } from './types';
-
-// Export API
-export { taskAPI } from './taskAPI';
-
-// Export hooks
-export { 
-  useTasks, 
-  useTasksByAssignee, 
-  useCreateTask, 
-  useUpdateTask, 
-  useDeleteTask 
-} from './hooks/useTasks';
-
-// Export components
+export { TaskModal } from './components/TaskModal';
+export { CreateTaskModal } from './components/CreateTaskModal';
 export { TaskForm } from './components/TaskForm';
-export { TaskModal } from './components/TaskModal'; 
+export { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from './hooks/useTasks';
+export type { Task, TaskStatus, CreateTaskData, UpdateTaskData } from './types'; 

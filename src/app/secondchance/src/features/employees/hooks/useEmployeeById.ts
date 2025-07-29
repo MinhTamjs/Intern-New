@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { employeeAPI } from '../employeeAPI';
+import { api } from '../../../lib/api';
+import type { Employee } from '../types';
 
-export const useEmployeeById = (id: string) => {
+export function useEmployeeById(id: string) {
   return useQuery({
     queryKey: ['employees', id],
-    queryFn: () => employeeAPI.getAll().then(employees => employees.find(emp => emp.id === id)),
+    queryFn: async (): Promise<Employee | undefined> => {
+      const employees = await api.employees.getAll();
+      return employees.find((emp: Employee) => emp.id === id);
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
-}; 
+} 
