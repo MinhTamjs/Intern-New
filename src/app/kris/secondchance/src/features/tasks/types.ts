@@ -9,7 +9,7 @@ export interface Task {
   id: string; // Unique identifier for the task
   title: string; // Human-readable task title
   description: string; // Detailed task description
-  assigneeId: string; // ID of the employee assigned to this task
+  assigneeIds: string[]; // IDs of the employees assigned to this task
   status: TaskStatus; // Current status in the workflow
   customColor?: string; // Optional custom background color for the task card
   dueData?: number; // Unix timestamp for due date (from API)
@@ -24,7 +24,7 @@ export interface Task {
 export interface CreateTaskData {
   title: string; // Task title (required)
   description: string; // Task description (required)
-  assigneeId: string; // ID of assigned employee (required)
+  assigneeIds: string[]; // IDs of assigned employees (required)
   status: TaskStatus; // Initial task status (required)
   customColor?: string; // Optional custom background color
   createdAt?: string; // Optional creation timestamp
@@ -38,7 +38,7 @@ export interface CreateTaskData {
 export interface UpdateTaskData {
   title?: string; // New task title
   description?: string; // New task description
-  assigneeId?: string; // New assignee ID
+  assigneeIds?: string[]; // New assignee IDs
   status?: TaskStatus; // New task status
   customColor?: string; // New custom background color
   updatedAt?: string; // Timestamp of the update

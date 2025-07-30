@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import { toast } from 'sonner';
@@ -10,6 +10,9 @@ import { type StatusColors } from '../../lib/themeUtils';
 import { useTheme } from '../../lib/useTheme';
 import type { Task, TaskStatus } from '../tasks/types';
 import type { Employee } from '../employees/types';
+import { TaskBoardFilter } from './TaskBoardFilter';
+import type { TaskFilters } from './TaskBoardFilter';
+import { useUpdateTask } from '../../features/tasks/hooks/useTasks';
 
 // Task board props
 interface TaskBoardProps {
@@ -20,6 +23,8 @@ interface TaskBoardProps {
   onTaskColorChange?: (taskId: string, color: string | null) => void;
   canEditColors?: boolean;
   isAdmin?: boolean;
+  onAssignUsers?: (taskId: string) => void;
+  canAssignUsers?: boolean;
 }
 
 // Available task statuses
@@ -36,7 +41,9 @@ export function TaskBoard({
   onTaskStatusChange,
   onTaskColorChange,
   canEditColors = false,
-  isAdmin = false
+  isAdmin = false,
+  onAssignUsers,
+  canAssignUsers = false
 }: TaskBoardProps) {
   // Drag state
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -56,6 +63,15 @@ export function TaskBoard({
     }
   }, [theme]);
 
+  // Reset all TaskCard custom colors on theme change
+  useEffect(() => {
+    tasks.forEach(task => {
+      if (task.customColor) {
+        updateTask.mutate({ id: task.id, data: { customColor: undefined } });
+      }
+    });
+  }, [theme]);
+
   // Drag sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -65,10 +81,34 @@ export function TaskBoard({
     })
   );
 
-  // Get tasks by status
-  const getTasksByStatus = (status: TaskStatus) => {
-    return tasks.filter(task => task.status === status);
-  };
+  // Filter state for TaskBoardFilter
+  const [filters, setFilters] = useState<TaskFilters>({ searchTerm: '', selectedAssigneeIds: [] });
+
+  // Memoize employeesById for O(1) lookup
+  const employeesById = useMemo(() => {
+    const map: Record<string, Employee> = {};
+    employees.forEach(emp => { map[emp.id] = emp; });
+    return map;
+  }, [employees]);
+
+  // Memoize filtered tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesTitle = task.title.toLowerCase().includes(filters.searchTerm.toLowerCase());
+      const matchesAssignee = filters.selectedAssigneeIds.length === 0 || 
+        task.assigneeIds.some(id => filters.selectedAssigneeIds.includes(id));
+      return matchesTitle && matchesAssignee;
+    });
+  }, [tasks, filters]);
+
+  // Memoize getTasksByStatus
+  const getTasksByStatus = useCallback((status: TaskStatus) => {
+    return filteredTasks.filter(task => task.status === status);
+  }, [filteredTasks]);
+
+  // Memoize event handlers
+  const memoizedOnTaskClick = useCallback(onTaskClick, []);
+  const memoizedOnTaskColorChange = onTaskColorChange ? useCallback(onTaskColorChange, []) : undefined;
 
   // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
@@ -113,18 +153,27 @@ export function TaskBoard({
     setCustomColors(newColors);
   };
 
+  const updateTask = useUpdateTask();
+
   return (
     <div className="h-full flex flex-col">
-      {/* Admin settings */}
-      {isAdmin && (
-        <div className="mb-4 flex justify-end">
-          <KanbanSettings
-            customColors={customColors}
-            onColorsChange={handleColorsChange}
+      {/* Filter bar above columns */}
+      <div className="flex justify-center w-full mb-2">
+        <div className="w-[1400px] max-w-full flex items-center">
+          <TaskBoardFilter
+            employees={employees}
+            onFilterChange={setFilters}
           />
+          {isAdmin && (
+            <div className="ml-4">
+              <KanbanSettings
+                customColors={customColors}
+                onColorsChange={handleColorsChange}
+              />
+            </div>
+          )}
         </div>
-      )}
-
+      </div>
       {/* Drag and drop context */}
       <DndContext
         sensors={sensors}
@@ -133,35 +182,39 @@ export function TaskBoard({
         onDragEnd={handleDragEnd}
       >
         {/* Board columns */}
-        <div className="flex gap-3 h-full overflow-x-hidden overflow-y-auto p-4">
-          {STATUSES.map((status, index) => (
-            <Column
-              key={status}
-              status={status}
-              tasks={getTasksByStatus(status)}
-              employees={employees}
-              onTaskClick={onTaskClick}
-              onTaskColorChange={onTaskColorChange}
-              canEditColors={canEditColors}
-              isFirst={index === 0}
-              isLast={index === STATUSES.length - 1}
-              customColors={customColors}
-            />
-          ))}
-
-          {/* Active task overlay */}
-          {activeTask && (
-            <div className="absolute" style={activeTaskStyle}>
-              <TaskCard
-                task={activeTask}
-                assignee={employees.find(emp => emp.id === activeTask.assigneeId)}
-                onClick={() => {}}
-                onColorChange={onTaskColorChange}
+        <div className="flex justify-center gap-6 h-full overflow-x-hidden overflow-y-auto p-4">
+          <div className="flex gap-6 w-[1400px] max-w-full">
+            {STATUSES.map((status, index) => (
+              <Column
+                key={status}
+                status={status}
+                tasks={getTasksByStatus(status)}
+                employeesById={employeesById}
+                onTaskClick={memoizedOnTaskClick}
+                onTaskColorChange={memoizedOnTaskColorChange}
                 canEditColors={canEditColors}
+                isFirst={index === 0}
+                isLast={index === STATUSES.length - 1}
+                customColors={customColors}
+                onAssignUsers={onAssignUsers}
+                canAssignUsers={canAssignUsers}
               />
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+
+        {/* Active task overlay */}
+        {activeTask && (
+          <div className="absolute" style={activeTaskStyle}>
+            <TaskCard
+              task={activeTask}
+              assignees={(activeTask.assigneeIds || []).map(id => employees.find(emp => emp.id === id)).filter(Boolean) as Employee[]}
+              onClick={() => {}}
+              onColorChange={onTaskColorChange}
+              canEditColors={canEditColors}
+            />
+          </div>
+        )}
       </DndContext>
 
       {/* Empty state */}

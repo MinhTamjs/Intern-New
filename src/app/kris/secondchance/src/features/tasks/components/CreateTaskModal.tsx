@@ -6,7 +6,7 @@ import {
 } from '../../../components/ui/dialog';
 import { TaskForm } from './TaskForm';
 import type { CreateTaskData } from '../types';
-import type { Employee, Role } from '../../employees/types';
+import type { Employee } from '../../employees/types';
 
 // Props interface for the CreateTaskModal component
 interface CreateTaskModalProps {
@@ -15,7 +15,6 @@ interface CreateTaskModalProps {
   onSubmit: (data: CreateTaskData) => void; // Callback when task is submitted
   employees: Employee[]; // List of available employees for assignment
   isLoading?: boolean; // Loading state for form submission
-  currentRole?: Role; // Current user role for permission-based features
 }
 
 /**
@@ -27,14 +26,13 @@ export function CreateTaskModal({
   onClose, 
   onSubmit, 
   employees, 
-  isLoading = false,
-  currentRole
+  isLoading = false
 }: CreateTaskModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+      <DialogContent className="max-w-md">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-lg">Create New Task</DialogTitle>
         </DialogHeader>
         
         {/* Task form with all necessary props */}
@@ -43,7 +41,6 @@ export function CreateTaskModal({
           onSubmit={onSubmit}
           onCancel={onClose}
           isLoading={isLoading}
-          currentRole={currentRole}
         />
       </DialogContent>
     </Dialog>

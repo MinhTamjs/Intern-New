@@ -27,6 +27,7 @@ export function KanbanSettings({ customColors, onColorsChange, disabled = false 
   // Local state
   const [localColors, setLocalColors] = useState<Record<string, StatusColors>>(customColors || {});
   const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
+  const [open, setOpen] = useState(false);
 
   // Update local colors when props change
   useEffect(() => {
@@ -50,6 +51,7 @@ export function KanbanSettings({ customColors, onColorsChange, disabled = false 
   // Handle save
   const handleSave = () => {
     onColorsChange(localColors);
+    setOpen(false);
   };
 
   // Handle reset
@@ -82,7 +84,7 @@ export function KanbanSettings({ customColors, onColorsChange, disabled = false 
   const statuses = ['pending', 'in-progress', 'in-review', 'done'];
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"

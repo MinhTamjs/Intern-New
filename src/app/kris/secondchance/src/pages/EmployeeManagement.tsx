@@ -39,6 +39,8 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
+  // Role filter state
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   // Data fetching hooks
   const { data: employees = [], isLoading, error } = useEmployees();
@@ -83,18 +85,14 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
     );
   }
 
-  // Filter employees based on search term
-  const filteredEmployees = (employees as Employee[]).filter((employee: Employee) =>
-    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Get role statistics
-  const roleStats = (employees as Employee[]).reduce((acc: Record<string, number>, employee: Employee) => {
-    acc[employee.role] = (acc[employee.role] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Filter employees based on search term and role
+  const filteredEmployees = (employees as Employee[]).filter((employee: Employee) => {
+    const matchesSearch =
+      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'all' || employee.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
   // Get color for role badge
   const getRoleColor = (role: string) => {
@@ -174,41 +172,40 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <ZiraLogo size={32} variant="sky" showText={false} />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">ZIRA</span>
-            </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              Back to Dashboard
-            </Button>
+          <div className="flex items-center h-16">
+            <Button variant="outline" onClick={() => navigate('/')}>Back to Dashboard</Button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page header */}
-        <div className="mb-8">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">ZIRA Employee Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage team members and their roles
-          </p>
-        </div>
-
-        {/* Role statistics */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">ZIRA Team Role Distribution</h2>
-          <div className="flex gap-3">
-            <Badge className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-              Admins: {roleStats.admin || 0}
-            </Badge>
-            <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              Managers: {roleStats.manager || 0}
-            </Badge>
-            <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-              Employees: {roleStats.employee || 0}
-            </Badge>
-          </div>
+        {/* Role filter chips */}
+        <div className="mb-6 flex items-center gap-4">
+          <span className="font-medium text-gray-700 dark:text-gray-200">Filter by role:</span>
+          <button
+            className={`px-3 py-1 rounded-full border text-sm font-medium transition-colors ${roleFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}
+            onClick={() => setRoleFilter('all')}
+          >
+            All
+          </button>
+          <button
+            className={`px-3 py-1 rounded-full border text-sm font-medium transition-colors ${roleFilter === 'admin' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}
+            onClick={() => setRoleFilter('admin')}
+          >
+            Admin
+          </button>
+          <button
+            className={`px-3 py-1 rounded-full border text-sm font-medium transition-colors ${roleFilter === 'manager' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}
+            onClick={() => setRoleFilter('manager')}
+          >
+            Manager
+          </button>
+          <button
+            className={`px-3 py-1 rounded-full border text-sm font-medium transition-colors ${roleFilter === 'employee' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}
+            onClick={() => setRoleFilter('employee')}
+          >
+            Employee
+          </button>
         </div>
 
         {/* Employee list */}

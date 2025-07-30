@@ -22,8 +22,9 @@ interface TaskModalProps {
   currentUserRole: Role;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (taskId: string, data: { title?: string; description?: string; assigneeId?: string; status?: TaskStatus }) => void;
+  onSave: (taskId: string, data: { title?: string; description?: string; assigneeIds?: string[]; status?: TaskStatus }) => void;
   onDelete: (taskId: string) => void;
+  openInEditMode?: boolean;
 }
 
 export function TaskModal({ 
@@ -33,13 +34,14 @@ export function TaskModal({
   isOpen, 
   onClose, 
   onSave, 
-  onDelete 
+  onDelete,
+  openInEditMode = false
 }: TaskModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    assigneeId: '',
+    assigneeIds: [] as string[],
     status: 'pending' as TaskStatus,
   });
 
@@ -49,13 +51,13 @@ export function TaskModal({
       setFormData({
         title: task.title,
         description: task.description,
-        assigneeId: task.assigneeId,
+        assigneeIds: task.assigneeIds,
         status: task.status,
       });
-      // Reset editing state when opening a new task
-      setIsEditing(false);
+      // Set editing state based on openInEditMode prop
+      setIsEditing(openInEditMode);
     }
-  }, [task?.id]); // Only reset when task ID changes
+  }, [task?.id, openInEditMode]); // Reset when task ID or edit mode changes
 
   // Reset form when modal closes
   useEffect(() => {
@@ -91,7 +93,7 @@ export function TaskModal({
   const handleSave = () => {
     if (task) {
       // Only include fields that have actually changed from the original task
-      const changedData: { title?: string; description?: string; assigneeId?: string; status?: TaskStatus } = {};
+      const changedData: { title?: string; description?: string; assigneeIds?: string[]; status?: TaskStatus } = {};
       
       if (formData.title !== task.title) {
         changedData.title = formData.title;
@@ -101,8 +103,8 @@ export function TaskModal({
         changedData.description = formData.description;
       }
       
-      if (formData.assigneeId !== task.assigneeId) {
-        changedData.assigneeId = formData.assigneeId;
+      if (JSON.stringify(formData.assigneeIds) !== JSON.stringify(task.assigneeIds)) {
+        changedData.assigneeIds = formData.assigneeIds;
       }
       
       if (formData.status !== task.status) {
@@ -126,7 +128,7 @@ export function TaskModal({
     onClose();
   };
 
-  const assignee = employees.find(emp => emp.id === task?.assigneeId);
+  const assignees = task?.assigneeIds.map(id => employees.find(emp => emp.id === id)).filter(Boolean) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -188,23 +190,29 @@ export function TaskModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="assignee" className="block">Assignee</Label>
-                  <Select
-                    value={formData.assigneeId || "unassigned"}
-                    onValueChange={(value) => setFormData({ ...formData, assigneeId: value === "unassigned" ? "" : value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select assignee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
+                  <Label htmlFor="assignees" className="block">Assignees</Label>
+                  <div className="space-y-2">
+                    {employees.map((employee) => (
+                      <div key={employee.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={employee.id}
+                          checked={formData.assigneeIds.includes(employee.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, assigneeIds: [...formData.assigneeIds, employee.id] });
+                            } else {
+                              setFormData({ ...formData, assigneeIds: formData.assigneeIds.filter(id => id !== employee.id) });
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <label htmlFor={employee.id} className="text-sm">
                           {employee.name} ({employee.role})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -238,23 +246,33 @@ export function TaskModal({
                 </div>
 
                 <div className="text-left">
-                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Assignee</Label>
-                  <div className="flex items-center space-x-2 mt-1">
-                    {assignee ? (
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback>
-                          {assignee.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <div className="w-8 h-8 border border-gray-200 dark:border-gray-600 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">U</span>
+                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Assignees</Label>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                                         {assignees.length > 0 ? (
+                       assignees.map((assignee) => assignee && (
+                         <div key={assignee.id} className="flex items-center space-x-2">
+                           <Avatar className="w-8 h-8">
+                             <AvatarFallback>
+                               {assignee.name.split(' ').map(n => n[0]).join('')}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="text-left">
+                             <p className="font-medium text-left">{assignee.name}</p>
+                             <p className="text-sm text-gray-500 dark:text-gray-400 text-left">{assignee.email}</p>
+                           </div>
+                         </div>
+                       ))
+                     ) : (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 border border-gray-200 dark:border-gray-600 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">U</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="font-medium text-left">Unassigned</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-left">No assignees</p>
+                        </div>
                       </div>
                     )}
-                    <div className="text-left">
-                      <p className="font-medium text-left">{assignee?.name || 'Unassigned'}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 text-left">{assignee?.email || 'No email'}</p>
-                    </div>
                   </div>
                 </div>
 

@@ -6,35 +6,40 @@ import { getStatusInfo, type StatusColors } from '../../lib/themeUtils';
 import { useTheme } from '../../lib/useTheme';
 import type { Task, TaskStatus } from '../tasks/types';
 import type { Employee } from '../employees/types';
+import React from 'react';
 
 // Column props
 interface ColumnProps {
   status: TaskStatus;
   tasks: Task[];
-  employees: Employee[];
+  employeesById: Record<string, Employee>;
   onTaskClick: (task: Task) => void;
   onTaskColorChange?: (taskId: string, color: string | null) => void;
   canEditColors?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
   customColors?: Record<string, StatusColors>;
+  onAssignUsers?: (taskId: string) => void;
+  canAssignUsers?: boolean;
 }
 
 /**
  * Column component for Kanban board
  * Represents a single status column with tasks
  */
-export function Column({
+const ColumnComponent = ({
   status,
   tasks,
-  employees,
+  employeesById,
   onTaskClick,
   onTaskColorChange,
   canEditColors = false,
   isFirst = false,
   isLast = false,
-  customColors
-}: ColumnProps) {
+  customColors,
+  onAssignUsers,
+  canAssignUsers = false
+}: ColumnProps) => {
   // Drop zone setup
   const { setNodeRef, isOver, active } = useDroppable({ id: status });
   const isDragActive = active !== null;
@@ -59,7 +64,7 @@ export function Column({
   };
 
   return (
-    <div className={`flex-1 min-w-0 max-w-xs flex flex-col ${getContainerClasses()}`}>
+    <div className={`flex-shrink-0 w-[320px] max-w-sm flex flex-col ${getContainerClasses()}`}>
       {/* Column container */}
       <div
         className={`
@@ -120,7 +125,7 @@ export function Column({
         </div>
 
         {/* Column content */}
-        <div className="pt-0 px-0.5 pb-0.5 flex-1 flex flex-col min-h-0 bg-gray-50 dark:bg-[#1a1a1a]">
+        <div className="pt-0 px-0.5 pb-0.5 flex-1 flex flex-col min-h-[600px] max-h-[800px] bg-gray-50 dark:bg-[#1a1a1a]">
           <div
             ref={setNodeRef}
             className={`
@@ -133,19 +138,22 @@ export function Column({
           >
             {/* Task list */}
             <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              {tasks.map((task) => {
-                const assignee = employees.find(emp => emp.id === task.assigneeId);
+              {React.useMemo(() => tasks.map((task) => {
+                const assignees = (task.assigneeIds || []).map(id => employeesById[id]).filter(Boolean);
                 return (
                   <TaskCard
                     key={task.id}
                     task={task}
-                    assignee={assignee}
+                    assignees={assignees}
                     onClick={() => onTaskClick(task)}
                     onColorChange={onTaskColorChange}
                     canEditColors={canEditColors}
+                    defaultColor={statusInfo.colors.background}
+                    onAssignUsers={onAssignUsers}
+                    canAssignUsers={canAssignUsers}
                   />
                 );
-              })}
+              }), [tasks, employeesById, onTaskClick, onTaskColorChange, canEditColors])}
             </SortableContext>
             
             {/* Empty state */}
@@ -159,4 +167,6 @@ export function Column({
       </div>
     </div>
   );
-}
+};
+
+export const Column = React.memo(ColumnComponent);
