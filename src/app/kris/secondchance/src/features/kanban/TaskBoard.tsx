@@ -15,20 +15,35 @@ import { toast } from 'sonner';
 import { Column } from './Column';
 import { TaskCard } from './TaskCard';
 import { EmptyState } from '../../components/EmptyState';
+import { KanbanSettings } from '../../components/KanbanSettings';
 import { normalizeTaskStatus } from '../../lib/utils';
+import { type StatusColors } from '../../lib/themeUtils';
+import { useTheme } from '../../lib/useTheme';
 import type { Task, TaskStatus } from '../tasks/types';
 import type { Employee } from '../employees/types';
 
+// Props interface for the TaskBoard component
 interface TaskBoardProps {
-  tasks: Task[];
-  employees: Employee[];
-  onTaskClick: (task: Task) => void;
-  onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  tasks: Task[]; // Array of tasks to display on the board
+  employees: Employee[]; // Array of employees for assignee information
+  onTaskClick: (task: Task) => void; // Callback when a task is clicked
+  onTaskStatusChange: (taskId: string, newStatus: TaskStatus) => void; // Callback when task status changes
+  onTaskColorChange?: (taskId: string, color: string | null) => void; // Callback when task color is changed
+  canEditColors?: boolean; // Whether the user can edit task colors
+  isAdmin?: boolean; // Whether the current user is an admin
 }
 
+// Define the valid task statuses for the Kanban board
+// These correspond to the column headers and determine task flow
 const STATUSES: TaskStatus[] = ['pending', 'in-progress', 'in-review', 'done'];
 
-// Custom collision detection strategy that combines multiple methods
+/**
+ * Custom collision detection strategy that combines multiple detection methods
+ * Provides robust drag-and-drop behavior by trying different approaches in order
+ * This ensures reliable drop detection even in edge cases
+ * @param args - Collision detection arguments from @dnd-kit
+ * @returns Array of detected collisions
+ */
 const customCollisionDetection: CollisionDetection = (args) => {
   // First, try pointerWithin - if the user's mouse pointer is inside a droppable area
   const pointerCollisions = pointerWithin(args);
@@ -50,25 +65,56 @@ const customCollisionDetection: CollisionDetection = (args) => {
   return closestCollisions;
 };
 
-export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }: TaskBoardProps) {
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [originalStatus, setOriginalStatus] = useState<TaskStatus | null>(null);
+/**
+ * TaskBoard component manages the Kanban board layout and drag-and-drop functionality
+ * Renders columns for each task status and handles task movement between columns
+ * Features full dark mode support and admin color customization
+ */
+export function TaskBoard({ 
+  tasks, 
+  employees, 
+  onTaskClick, 
+  onTaskStatusChange, 
+  onTaskColorChange,
+  canEditColors = false,
+  isAdmin = false 
+}: TaskBoardProps) {
+  // State for drag-and-drop functionality
+  const [activeTask, setActiveTask] = useState<Task | null>(null); // Currently dragged task
+  const [originalStatus, setOriginalStatus] = useState<TaskStatus | null>(null); // Original status before drag
   
+  // State for custom colors - allows admins to customize column colors
+  const [customColors, setCustomColors] = useState<Record<string, StatusColors>>({});
+  
+  // Get current theme for theme-aware color management
+  const { theme } = useTheme();
+  
+  // Reset custom colors when theme changes to ensure default colors are used
+  useEffect(() => {
+    if (Object.keys(customColors).length > 0) {
+      setCustomColors({});
+      toast.info('Custom colors reset to default for new theme');
+    }
+  }, [theme]);
+  
+  // Configure drag sensors with activation constraints
+  // This prevents accidental drags by requiring a minimum distance before drag starts
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 8, // Require 8px movement before drag starts (prevents accidental drags)
       },
     })
   );
 
-  // Enhanced debug logging to identify status issues
+  // Enhanced debug logging to identify status issues and filtering problems
+  // This helps troubleshoot issues with task visibility and column filtering
   useEffect(() => {
     console.log('=== TaskBoard Debug Information ===');
     console.log('Total tasks received:', tasks.length);
     console.log('All tasks:', tasks);
     
-    // Check for status mismatches
+    // Analyze status distribution and identify issues
     const statusCounts: Record<string, number> = {};
     const invalidStatusTasks: Task[] = [];
     const normalizedStatusCounts: Record<string, number> = {};
@@ -77,7 +123,7 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
       const status = task.status;
       statusCounts[status] = (statusCounts[status] || 0) + 1;
       
-      // Check normalized status
+      // Check normalized status for case sensitivity issues
       const normalizedStatus = normalizeTaskStatus(status);
       if (normalizedStatus) {
         normalizedStatusCounts[normalizedStatus] = (normalizedStatusCounts[normalizedStatus] || 0) + 1;
@@ -112,7 +158,11 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
     console.log('=== End TaskBoard Debug ===');
   }, [tasks]);
 
-  // Enhanced drag detection with better visual feedback
+  /**
+   * Handles the start of a drag operation
+   * Sets up the active task and stores its original status for potential rollback
+   * @param event - Drag start event from @dnd-kit
+   */
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find(t => t.id === event.active.id);
     if (task) {
@@ -136,6 +186,11 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
     }
   };
 
+  /**
+   * Handles the end of a drag operation
+   * Validates drop targets and updates task status or reverts changes
+   * @param event - Drag end event from @dnd-kit
+   */
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -171,11 +226,17 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
       }
     }
     
-    // Reset state
+    // Reset state after drag operation
     setActiveTask(null);
     setOriginalStatus(null);
   };
 
+  /**
+   * Filters tasks by status, handling case sensitivity issues
+   * Uses normalized status comparison to ensure consistent filtering
+   * @param status - The status to filter by
+   * @returns Array of tasks matching the status
+   */
   const getTasksByStatus = (status: TaskStatus) => {
     // Use normalized status filtering to handle case sensitivity
     const filteredTasks = tasks.filter(task => {
@@ -186,7 +247,10 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
     return filteredTasks;
   };
 
-  // Get tasks with invalid statuses for debugging
+  /**
+   * Identifies tasks with invalid statuses for debugging purposes
+   * @returns Array of tasks with unrecognized status values
+   */
   const getInvalidStatusTasks = () => {
     return tasks.filter(task => {
       const normalizedStatus = normalizeTaskStatus(task.status);
@@ -208,93 +272,123 @@ export function TaskBoard({ tasks, employees, onTaskClick, onTaskStatusChange }:
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      collisionDetection={customCollisionDetection}
-    >
-      <div 
-        className="flex gap-3 h-full 
-                   overflow-x-hidden 
-                   overflow-y-auto"
-      >
-        {STATUSES.map((status, index) => (
-          <Column
-            key={status}
-            status={status}
-            tasks={getTasksByStatus(status)}
-            employees={employees}
-            onTaskClick={onTaskClick}
-            isFirst={index === 0}
-            isLast={index === STATUSES.length - 1}
+    <div className="h-full flex flex-col">
+      {/* Admin Settings Panel - only visible to admin users */}
+      {isAdmin && (
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Kanban Board</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Customize colors and manage board settings
+            </p>
+          </div>
+          <KanbanSettings
+            customColors={customColors}
+            onColorsChange={setCustomColors}
           />
-        ))}
-        
-        {/* Debug column for tasks with invalid statuses */}
-        {invalidStatusTasks.length > 0 && (
-          <div className="flex-1 min-w-0 max-w-xs flex flex-col">
-            <div className="flex flex-col h-full border-2 border-red-200 bg-red-50 rounded-lg">
-              <div className="p-4 border-b border-red-200 bg-red-100 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
-                      ⚠️
+        </div>
+      )}
+
+      {/* Main Board Layout with drag-and-drop context */}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        collisionDetection={customCollisionDetection}
+      >
+        {/* Main board layout with columns */}
+        <div 
+          className="flex gap-3 h-full 
+                     overflow-x-hidden 
+                     overflow-y-auto
+                     p-4"
+        >
+          {/* Render columns for each valid status */}
+          {STATUSES.map((status, index) => (
+            <Column
+              key={status}
+              status={status}
+              tasks={getTasksByStatus(status)}
+              employees={employees}
+              onTaskClick={onTaskClick}
+              onTaskColorChange={onTaskColorChange}
+              canEditColors={canEditColors}
+              isFirst={index === 0} // Flag for first column styling
+              isLast={index === STATUSES.length - 1} // Flag for last column styling
+              customColors={customColors}
+            />
+          ))}
+          
+          {/* Debug column for tasks with invalid statuses - only shown in development */}
+          {invalidStatusTasks.length > 0 && (
+            <div className="flex-1 min-w-0 max-w-xs flex flex-col">
+              <div className="flex flex-col h-full border-2 border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+                {/* Debug column header */}
+                <div className="p-4 border-b border-red-200 dark:border-red-800 bg-red-100 dark:bg-red-900/30 flex-shrink-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-red-500 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+                        ⚠️
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-red-700 dark:text-red-300">Invalid Status</h3>
+                        <p className="text-xs text-red-600 dark:text-red-400 opacity-75 mt-0.5">
+                          Tasks with unrecognized status
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-base font-bold text-red-700">Invalid Status</h3>
-                      <p className="text-xs text-red-600 opacity-75 mt-0.5">
-                        Tasks with unrecognized status
-                      </p>
-                    </div>
+                    <span className="text-xs font-semibold px-2 py-1 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800">
+                      {invalidStatusTasks.length}
+                    </span>
                   </div>
-                  <span className="text-xs font-semibold px-2 py-1 bg-red-100 text-red-800 border border-red-200 rounded">
-                    {invalidStatusTasks.length}
-                  </span>
                 </div>
-              </div>
-              <div className="p-2 bg-white flex-1 flex flex-col min-h-0">
-                <div className="flex-1 space-y-0.5 overflow-y-hidden">
-                  {invalidStatusTasks.map((task) => {
-                    const assignee = employees.find(emp => emp.id === task.assigneeId);
-                    return (
-                      <div key={task.id} className="border rounded-lg p-3 mb-1.5 bg-red-50 border-red-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-red-900 truncate">
-                              {task.title}
+                {/* Debug column content */}
+                <div className="p-2 bg-white dark:bg-gray-800 flex-1 flex flex-col min-h-0">
+                  <div className="flex-1 space-y-0.5 overflow-y-hidden">
+                    {invalidStatusTasks.map((task) => {
+                      const assignee = employees.find(emp => emp.id === task.assigneeId);
+                      return (
+                        <div key={task.id} className="border border-red-200 dark:border-red-800 p-3 mb-1.5 bg-red-50 dark:bg-red-900/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-red-900 dark:text-red-300 truncate">
+                                {task.title}
+                              </div>
+                              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                Status: "{task.status}" (not recognized)
+                              </div>
                             </div>
-                            <div className="text-xs text-red-600 mt-1">
-                              Status: "{task.status}" (not recognized)
-                            </div>
-                          </div>
-                          <div className="flex-shrink-0 ml-2">
-                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 border border-gray-300">
-                              {assignee?.name.split(' ').map(n => n[0]).join('') || 'U'}
+                            <div className="flex-shrink-0 ml-2">
+                              <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+                                {assignee?.name.split(' ').map(n => n[0]).join('') || 'U'}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-      
-      <DragOverlay>
-        {activeTask ? (
-          <div className="w-72">
-            <TaskCard
-              task={activeTask}
-              assignee={employees.find(emp => emp.id === activeTask.assigneeId)}
-              onClick={() => {}}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+          )}
+        </div>
+        
+        {/* Drag overlay - shows the dragged task above other content */}
+        <DragOverlay>
+          {activeTask ? (
+            <div className="w-72">
+              <TaskCard
+                task={activeTask}
+                assignee={employees.find(emp => emp.id === activeTask.assigneeId)}
+                onClick={() => {}} // No-op during drag
+                onColorChange={onTaskColorChange}
+                canEditColors={canEditColors}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 } 

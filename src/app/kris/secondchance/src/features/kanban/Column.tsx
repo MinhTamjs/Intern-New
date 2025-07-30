@@ -1,30 +1,52 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { TaskCard } from './TaskCard';
+import { getStatusInfo, type StatusColors } from '../../lib/themeUtils';
+import { useTheme } from '../../lib/useTheme';
 import type { Task, TaskStatus } from '../tasks/types';
 import type { Employee } from '../employees/types';
 
+// Props interface for the Column component
 interface ColumnProps {
-  status: TaskStatus;
-  tasks: Task[];
-  employees: Employee[];
-  onTaskClick: (task: Task) => void;
-  isFirst?: boolean;
-  isLast?: boolean;
+  status: TaskStatus; // The status this column represents
+  tasks: Task[]; // Tasks to display in this column
+  employees: Employee[]; // Employee data for assignee information
+  onTaskClick: (task: Task) => void; // Callback when a task is clicked
+  onTaskColorChange?: (taskId: string, color: string | null) => void; // Callback when task color is changed
+  canEditColors?: boolean; // Whether the user can edit task colors
+  isFirst?: boolean; // Flag for first column styling
+  isLast?: boolean; // Flag for last column styling
+  customColors?: Record<string, StatusColors>; // Custom colors for status styling
 }
 
-export function Column({ status, tasks, employees, onTaskClick, isFirst = false, isLast = false }: ColumnProps) {
+/**
+ * Column component represents a single status column in the Kanban board
+ * Handles droppable functionality and visual feedback for drag-and-drop operations
+ * Features sharp edges and full dark mode support with customizable colors
+ */
+export function Column({ 
+  status, 
+  tasks, 
+  employees, 
+  onTaskClick, 
+  onTaskColorChange,
+  canEditColors = false,
+  isFirst = false, 
+  isLast = false,
+  customColors 
+}: ColumnProps) {
+  // Set up droppable area for drag-and-drop functionality
+  // This allows tasks to be dropped into this column
   const { setNodeRef, isOver, active } = useDroppable({
-    id: status,
+    id: status, // Use status as the droppable ID
   });
 
-  // Debug logging for drag state
-  const isDragActive = active !== null;
-  const isCurrentColumnTarget = isOver && isDragActive;
+  // Determine drag state for visual feedback
+  const isDragActive = active !== null; // True when any item is being dragged
+  const isCurrentColumnTarget = isOver && isDragActive; // True when this column is the drop target
   
-  // Debug logging for first and last columns
+  // Debug logging for first and last columns to help troubleshoot edge column issues
   if (isDragActive && (isFirst || isLast)) {
     console.log(`Column ${status} (${isFirst ? 'FIRST' : isLast ? 'LAST' : 'MIDDLE'}):`, {
       isOver,
@@ -35,62 +57,18 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
     });
   }
 
-  const getStatusInfo = (status: TaskStatus) => {
-    switch (status) {
-      case 'pending':
-        return {
-          title: 'Pending',
-          color: 'bg-gradient-to-br from-pink-400 to-pink-600',
-          bgColor: 'bg-gradient-to-br from-pink-50 to-pink-100',
-          borderColor: 'border-pink-200',
-          textColor: 'text-pink-700',
-          badgeColor: 'bg-pink-100 text-pink-800',
-          icon: '⏳',
-          description: 'Tasks not started',
-          count: tasks.length
-        };
-      case 'in-progress':
-        return {
-          title: 'In Progress',
-          color: 'bg-gradient-to-br from-blue-400 to-blue-600',
-          bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
-          borderColor: 'border-blue-200',
-          textColor: 'text-blue-700',
-          badgeColor: 'bg-blue-100 text-blue-800',
-          icon: '🚧',
-          description: 'Active work in motion',
-          count: tasks.length
-        };
-      case 'in-review':
-        return {
-          title: 'In Review',
-          color: 'bg-gradient-to-br from-amber-400 to-amber-600',
-          bgColor: 'bg-gradient-to-br from-amber-50 to-amber-100',
-          borderColor: 'border-amber-200',
-          textColor: 'text-amber-700',
-          badgeColor: 'bg-amber-100 text-amber-800',
-          icon: '🔍',
-          description: 'Needs attention',
-          count: tasks.length
-        };
-      case 'done':
-        return {
-          title: 'Done',
-          color: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
-          bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
-          borderColor: 'border-emerald-200',
-          textColor: 'text-emerald-700',
-          badgeColor: 'bg-emerald-100 text-emerald-800',
-          icon: '✅',
-          description: 'Successfully completed',
-          count: tasks.length
-        };
-    }
-  };
+  // Get status information and colors based on current theme
+  const { theme } = useTheme();
+  const statusInfo = getStatusInfo(status, theme, customColors);
 
-  const statusInfo = getStatusInfo(status);
+  // Calculate the actual task count for this status
+  const taskCount = tasks.length;
 
-  // Get visual feedback classes based on drag state
+  /**
+   * Returns CSS classes for drag state visual feedback
+   * Provides different visual cues based on whether this column is a valid drop target
+   * @returns CSS classes for drag feedback
+   */
   const getDragFeedbackClasses = () => {
     if (!isDragActive) return '';
     
@@ -98,19 +76,23 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
       // Valid drop target - highlight with prominent success colors and borders
       let classes = 'ring-4 ring-green-500 ring-opacity-75 shadow-2xl transform scale-[1.02] border-green-400 border-2 transition-all duration-200 z-10';
       
-      // Add extra emphasis for first and last columns
+      // Add extra emphasis for first and last columns to ensure they're visible
       if (isFirst || isLast) {
         classes += ' ring-6 ring-green-600 ring-opacity-90 shadow-2xl';
       }
       
       return classes;
     } else {
-      // Invalid drop target - subtle indication with opacity
+      // Invalid drop target - subtle indication with reduced opacity
       return 'opacity-50 ring-1 ring-gray-300 ring-opacity-50';
     }
   };
 
-  // Get additional container classes for better visual feedback
+  /**
+   * Returns additional container classes for enhanced visual feedback
+   * Adds CSS classes for drag target highlighting and edge column emphasis
+   * @returns CSS classes for container styling
+   */
   const getContainerClasses = () => {
     if (!isDragActive) return '';
     
@@ -118,7 +100,7 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
       // Add extra spacing and z-index for highlighted columns
       let classes = 'relative z-10 column-drag-target';
       
-      // Add specific classes for first and last columns
+      // Add specific classes for first and last columns for CSS targeting
       if (isFirst) {
         classes += ' column-first';
       } else if (isLast) {
@@ -130,64 +112,79 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
     return '';
   };
 
-  // Get additional card classes for enhanced visual feedback
-  const getCardClasses = () => {
-    if (!isDragActive) return '';
-    
-    if (isCurrentColumnTarget) {
-      let classes = 'relative';
-      
-      // Add extra visual emphasis for edge columns
-      if (isFirst || isLast) {
-        classes += ' shadow-2xl';
-      }
-      
-      return classes;
-    }
-    return '';
-  };
-
   return (
     <div className={`flex-1 min-w-0 max-w-xs flex flex-col ${getContainerClasses()}`}>
-      <Card 
+      <div 
         className={`
-          flex flex-col h-full border-2 ${statusInfo.borderColor} ${statusInfo.bgColor}
+          flex flex-col h-full border-2 shadow-sm
           transition-all duration-200 ease-in-out
           ${getDragFeedbackClasses()}
-          ${getCardClasses()}
         `}
+        style={{
+          backgroundColor: statusInfo.colors.background,
+          borderColor: statusInfo.colors.border
+        }}
       >
-        <CardHeader className={`pb-1.5 px-2 py-2 ${statusInfo.bgColor} border-b ${statusInfo.borderColor} flex-shrink-0`}>
+        {/* Column header with status info and task count */}
+        <div 
+          className="pb-1.5 px-2 py-2 border-b flex-shrink-0"
+          style={{
+            backgroundColor: statusInfo.colors.headerBg,
+            borderColor: statusInfo.colors.border
+          }}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <div className={`w-5 h-5 rounded-lg ${statusInfo.color} flex items-center justify-center text-white text-[10px] font-semibold shadow-sm`}>
+              {/* Status icon with gradient background */}
+              <div 
+                className="w-5 h-5 flex items-center justify-center text-white text-[10px] font-semibold shadow-sm"
+                style={{ backgroundColor: statusInfo.colors.background }}
+              >
                 {statusInfo.icon}
               </div>
               <div>
-                <CardTitle className={`text-xs font-bold ${statusInfo.textColor} flex items-center gap-2`}>
+                {/* Status title and description */}
+                <h3 
+                  className="text-xs font-bold flex items-center gap-2"
+                  style={{ color: statusInfo.colors.text }}
+                >
                   {statusInfo.title}
-                </CardTitle>
-                <p className={`text-[9px] ${statusInfo.textColor} opacity-75 mt-0.5`}>
+                </h3>
+                <p 
+                  className="text-[9px] opacity-75 mt-0.5"
+                  style={{ color: statusInfo.colors.text }}
+                >
                   {statusInfo.description}
                 </p>
               </div>
             </div>
-            <Badge className={`text-[9px] font-semibold px-1 py-0.5 ${statusInfo.badgeColor} border ${statusInfo.borderColor}`}>
-              {statusInfo.count}
+            {/* Task count badge */}
+            <Badge 
+              className="text-[9px] font-semibold px-1 py-0.5 border"
+              style={{
+                backgroundColor: statusInfo.colors.badge,
+                color: statusInfo.colors.text,
+                borderColor: statusInfo.colors.border
+              }}
+            >
+              {taskCount}
             </Badge>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0 px-0.5 pb-0.5 bg-white flex-1 flex flex-col min-h-0">
+        </div>
+        
+        {/* Column content area with droppable zone */}
+        <div className="pt-0 px-0.5 pb-0.5 flex-1 flex flex-col min-h-0 bg-gray-50 dark:bg-[#1a1a1a]">
           <div
-            ref={setNodeRef}
+            ref={setNodeRef} // Attach droppable ref to this element
             className={`
               flex-1 space-y-0.5 
-              ${isDragActive ? 'overflow-y-auto' : 'overflow-x-hidden'}
-              ${isCurrentColumnTarget ? 'bg-green-50 bg-opacity-50 rounded-lg p-0.5 border-2 border-green-300 border-dashed' : ''}
+              ${isDragActive ? 'overflow-y-auto' : 'overflow-x-hidden'} // Enable vertical scroll during drag
+              ${isCurrentColumnTarget ? 'bg-green-50 dark:bg-green-900 bg-opacity-50 dark:bg-opacity-30 p-0.5 border-2 border-green-300 dark:border-green-600 border-dashed' : ''} // Highlight drop zone
               transition-all duration-200
-              min-h-[60px]
+              min-h-[60px] // Minimum height for drop zone
             `}
           >
+            {/* Sortable context for drag-and-drop within the column */}
             <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
               {tasks.map((task) => {
                 const assignee = employees.find(emp => emp.id === task.assigneeId);
@@ -197,6 +194,8 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
                     task={task}
                     assignee={assignee}
                     onClick={() => onTaskClick(task)}
+                    onColorChange={onTaskColorChange}
+                    canEditColors={canEditColors}
                   />
                 );
               })}
@@ -204,10 +203,10 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
             
             {/* Drop zone indicator when column is empty */}
             {tasks.length === 0 && isCurrentColumnTarget && (
-              <div className="flex items-center justify-center h-16 border-2 border-dashed border-green-400 rounded-lg bg-green-50 bg-opacity-30">
+              <div className="flex items-center justify-center h-16 border-2 border-dashed border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900 bg-opacity-30 dark:bg-opacity-30">
                 <div className="text-center">
                   <div className="text-lg mb-0.5">📋</div>
-                  <p className="text-[10px] text-green-700 font-medium">Drop task here</p>
+                  <p className="text-[10px] text-green-700 dark:text-green-300 font-medium">Drop task here</p>
                 </div>
               </div>
             )}
@@ -222,8 +221,8 @@ export function Column({ status, tasks, employees, onTaskClick, isFirst = false,
               <div className="h-0.5 flex-shrink-0 opacity-0 pointer-events-none"></div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

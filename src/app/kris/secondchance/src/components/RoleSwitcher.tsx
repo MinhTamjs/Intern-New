@@ -13,19 +13,19 @@ export function RoleSwitcher({ currentRole, onRoleChange }: RoleSwitcherProps) {
   const getRoleColor = (role: Role) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
       case 'manager':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200';
       case 'employee':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   };
 
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-sm font-medium text-gray-700">Demo Role:</span>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Demo Role:</span>
       <div className="flex space-x-1">
         {roles.map((role) => (
           <Button

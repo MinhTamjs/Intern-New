@@ -15,50 +15,65 @@ import { AuditLog } from './components/AuditLog';
 import { EmployeeManagement } from './pages/EmployeeManagement';
 import { ZiraLogo } from './components/ZiraLogo';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeProvider } from './lib/theme';
+import { ThemeToggle } from './components/ThemeToggle';
 import { createDemoUser, getRolePermissions } from './lib/roleManager';
 import { auditLogService, auditLogHelpers } from './lib/auditLog';
 import type { Task, TaskStatus, UpdateTaskData, CreateTaskData } from './features/tasks';
 import type { CreateEmployeeData, Role } from './features/employees';
 
+// Configure React Query client with caching and retry strategies
+// This provides data fetching, caching, and error handling for the entire app
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 1000 * 60 * 5, // Cache data for 5 minutes before considering it stale
+      retry: 2, // Retry failed requests up to 2 times
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff with max 30s
     },
     mutations: {
-      retry: 1,
+      retry: 1, // Retry mutations once on failure
     },
   },
 });
 
+// Props interface for the main Dashboard component
 interface DashboardProps {
-  currentRole: Role;
-  onRoleChange: (role: Role) => void;
+  currentRole: Role; // Current user role (admin, manager, employee)
+  onRoleChange: (role: Role) => void; // Callback to update user role
 }
 
+/**
+ * Main Dashboard component that renders the Kanban board and manages application state
+ * Handles task management, employee management, and role-based access control
+ */
 function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const [showAuditLog, setShowAuditLog] = useState(false);
+  
+  // Modal state management - controls visibility of different modals
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null); // Currently selected task for editing
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false); // Controls task edit modal visibility
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false); // Controls employee creation modal
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false); // Controls task creation modal
+  const [showAuditLog, setShowAuditLog] = useState(false); // Controls audit log visibility
 
+  // Create demo user and get role-based permissions
   const currentUser = createDemoUser(currentRole);
   const permissions = getRolePermissions(currentRole);
 
+  // Data fetching hooks with error handling - these manage API calls and cache data
   const { data: employees = [], isLoading: employeesLoading, error: employeesError } = useEmployees();
   const { data: allTasks = [], isLoading: tasksLoading, error: tasksError } = useTasks();
 
+  // Mutation hooks for CRUD operations - these handle data modifications
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
   const deleteTaskMutation = useDeleteTask();
   const createEmployeeMutation = useCreateEmployee();
 
-  // Debug logging for API data
+  // Debug logging to help identify data issues and filtering problems
+  // This helps troubleshoot issues with task filtering and data consistency
   useEffect(() => {
     console.log('=== Dashboard Debug Information ===');
     console.log('Current role:', currentRole);
@@ -67,7 +82,7 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     console.log('All tasks from API:', allTasks);
     console.log('Employees from API:', employees);
     
-    // Check for tasks that might be filtered out
+    // Check for tasks that might be filtered out due to data inconsistencies
     if (allTasks.length > 0) {
       const tasksWithIssues = allTasks.filter(task => {
         const hasInvalidStatus = !['pending', 'in-progress', 'in-review', 'done'].includes(task.status);
@@ -85,210 +100,52 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     console.log('=== End Dashboard Debug ===');
   }, [currentRole, currentUser.id, permissions, allTasks.length, employees.length]);
 
-  // Filter tasks based on user role
-  const tasks = permissions.canViewAllTasks 
-    ? allTasks 
-    : allTasks.filter(task => task.assigneeId === currentUser.id);
-
-  // Debug logging for filtered tasks
-  useEffect(() => {
-    console.log('=== Task Filtering Debug ===');
-    console.log('All tasks count:', allTasks.length);
-    console.log('Filtered tasks count:', tasks.length);
-    console.log('Can view all tasks:', permissions.canViewAllTasks);
-    console.log('Current user ID:', currentUser.id);
-    
-    if (!permissions.canViewAllTasks) {
-      const userTasks = allTasks.filter(task => task.assigneeId === currentUser.id);
-      console.log('Tasks assigned to current user:', userTasks);
+  // Filter tasks based on user role and permissions
+  // Admins and managers see all tasks, employees only see their assigned tasks
+  const tasks = allTasks.filter(task => {
+    if (permissions.canViewAllTasks) {
+      return true; // Admins and managers can see all tasks
     }
-    
-    console.log('=== End Task Filtering Debug ===');
-  }, [allTasks.length, tasks.length, permissions.canViewAllTasks, currentUser.id]);
+    return task.assigneeId === currentUser.id; // Employees only see their assigned tasks
+  });
 
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setIsTaskModalOpen(true);
-  };
-
-  const handleTaskStatusChange = (taskId: string, newStatus: TaskStatus) => {
-    const task = allTasks.find(t => t.id === taskId);
-    if (!task) {
-      console.error('Task not found for status change:', taskId);
-      toast.error('Task not found');
-      return;
-    }
-
-    // Prevent unnecessary updates
-    if (task.status === newStatus) {
-      console.log('Task status unchanged:', taskId, newStatus);
-      return;
-    }
-
-    const previousStatus = task.status;
-    
-    updateTaskMutation.mutate(
-      { 
-        id: taskId, 
-        data: { 
-          status: newStatus,
-          updatedAt: new Date().toISOString()
-        } 
-      },
-      {
-        onSuccess: () => {
-          auditLogHelpers.taskMoved(taskId, task.title, previousStatus, newStatus, currentRole);
-          toast.success(`Task moved to ${newStatus.replace('-', ' ')}`);
-        },
-        onError: (error) => {
-          toast.error('Failed to update task status');
-          console.error('Task status update error:', error);
-        },
-      }
-    );
-  };
-
-  const handleTaskSave = (taskId: string, data: UpdateTaskData) => {
-    const task = allTasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    // Only include fields that have actually changed
-    const changedFields: UpdateTaskData = {};
-    
-    if (data.title !== undefined && data.title !== task.title) {
-      changedFields.title = data.title;
-    }
-    
-    if (data.description !== undefined && data.description !== task.description) {
-      changedFields.description = data.description;
-    }
-    
-    if (data.assigneeId !== undefined && data.assigneeId !== task.assigneeId) {
-      changedFields.assigneeId = data.assigneeId;
-    }
-    
-    if (data.status !== undefined && data.status !== task.status) {
-      changedFields.status = data.status;
-    }
-
-    // Always include updatedAt timestamp for any change
-    changedFields.updatedAt = new Date().toISOString();
-
-    // Log assignee changes
-    if (changedFields.assigneeId) {
-      const previousAssignee = employees.find(emp => emp.id === task.assigneeId)?.name || 'Unassigned';
-      const newAssignee = employees.find(emp => emp.id === changedFields.assigneeId!)?.name || 'Unassigned';
-      auditLogHelpers.taskAssigneeUpdated(taskId, task.title, previousAssignee, newAssignee, currentRole);
-    }
-
-    // Always update if there are any changes (including just updatedAt)
-    if (Object.keys(changedFields).length === 0) {
-      toast.info('No changes detected');
-      setIsTaskModalOpen(false);
-      return;
-    }
-
-    updateTaskMutation.mutate(
-      { id: taskId, data: changedFields },
-      {
-        onSuccess: () => {
-          auditLogHelpers.taskUpdated(taskId, task.title, currentRole, 'Task details updated');
-          toast.success('Task updated successfully');
-          
-          // Optimistically update the cache with the new task data
-          queryClient.setQueryData(['tasks'], (oldTasks: Task[] = []) => {
-            return oldTasks.map(t => t.id === taskId ? { ...t, ...changedFields } : t);
-          });
-          
-          setIsTaskModalOpen(false);
-        },
-        onError: (error) => {
-          toast.error('Failed to update task');
-          console.error('Task update error:', error);
-        },
-      }
-    );
-  };
-
-  const handleTaskDelete = (taskId: string) => {
-    const task = allTasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    deleteTaskMutation.mutate(taskId, {
-      onSuccess: () => {
-        auditLogHelpers.taskDeleted(taskId, task.title, currentRole);
-        toast.success('Task deleted successfully');
-        setIsTaskModalOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to delete task');
-        console.error('Task delete error:', error);
-      },
-    });
-  };
-
-  const handleCreateTask = (data: CreateTaskData) => {
-    createTaskMutation.mutate(data, {
-      onSuccess: (newTask) => {
-        auditLogHelpers.taskCreated(newTask.id, newTask.title, currentRole);
-        toast.success('Task created successfully');
-        setIsCreateTaskModalOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to create task');
-        console.error('Task creation error:', error);
-      },
-    });
-  };
-
-  const handleCreateEmployee = (data: CreateEmployeeData) => {
-    createEmployeeMutation.mutate(data, {
-      onSuccess: (newEmployee) => {
-        auditLogHelpers.employeeCreated(newEmployee.id, newEmployee.name, currentRole);
-        toast.success('Employee added successfully');
-        setIsEmployeeModalOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to add employee');
-        console.error('Employee creation error:', error);
-      },
-    });
-  };
-
-  const handleRoleChange = (newRole: Role) => {
-    onRoleChange(newRole);
-    toast.success(`Switched to ${newRole} role`);
-  };
-
-  // Show loading state
+  // Loading state - shows loading spinner while data is being fetched
   if (employeesLoading || tasksLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#121212]">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          <div className="flex justify-center mb-6">
             <ZiraLogo size={48} />
           </div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading ZIRA...</p>
+          
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Loading ZIRA...
+          </h1>
+          
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Please wait while we load your workspace.
+          </p>
+          
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
         </div>
       </div>
     );
   }
 
-  // Show error state
+  // Error state - shows error message with retry option
   if (employeesError || tasksError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#121212]">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
           <div className="flex justify-center mb-6">
             <ZiraLogo size={48} />
           </div>
           
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Connection Error
           </h1>
           
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Unable to load data from the server. Please check your connection and try again.
           </p>
           
@@ -301,12 +158,13 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
             </Button>
           </div>
           
+          {/* Collapsible error details for debugging */}
           {(employeesError || tasksError) && (
             <details className="mt-6 text-left">
-              <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+              <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                 Error Details
               </summary>
-              <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono text-red-600">
+              <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-red-600 dark:text-red-400">
                 {employeesError && (
                   <div className="mb-2">
                     <strong>Employees Error:</strong> {employeesError.message}
@@ -325,19 +183,256 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     );
   }
 
+  // Event handlers for task management
+  /**
+   * Handles clicking on a task card to open the edit modal
+   * @param task - The task that was clicked
+   */
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  /**
+   * Handles drag end to update task status when a task is moved between columns
+   * @param taskId - ID of the task being moved
+   * @param newStatus - New status for the task
+   */
+  const handleTaskStatusChange = (taskId: string, newStatus: TaskStatus) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Only allow status changes if user has permission
+    if (!permissions.canChangeStatus) {
+      toast.error('You do not have permission to update task status');
+      return;
+    }
+
+    // Check if user can update this specific task
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser.id) {
+      toast.error('You can only update your own tasks');
+      return;
+    }
+
+    updateTaskMutation.mutate(
+      { id: taskId, data: { status: newStatus } },
+      {
+        onSuccess: (updatedTask) => {
+          // Log the status change for audit purposes
+          auditLogHelpers.taskStatusChanged(
+            taskId, 
+            task.title, 
+            task.status, 
+            newStatus, 
+            currentRole
+          );
+          toast.success(`Task moved to ${newStatus.replace('-', ' ')}`);
+        },
+        onError: (error) => {
+          toast.error('Failed to update task status');
+          console.error('Task status update error:', error);
+        },
+      }
+    );
+  };
+
+  /**
+   * Handles saving task changes from the edit modal
+   * @param taskId - ID of the task being updated
+   * @param data - Updated task data
+   */
+  const handleTaskSave = (taskId: string, data: UpdateTaskData) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Permission checks for task updates
+    if (!permissions.canEditTask) {
+      toast.error('You do not have permission to update tasks');
+      return;
+    }
+
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser.id) {
+      toast.error('You can only update your own tasks');
+      return;
+    }
+
+    // Check for assignee changes and log them
+    if (data.assigneeId && data.assigneeId !== task.assigneeId) {
+      const newAssignee = employees.find(emp => emp.id === data.assigneeId);
+      if (newAssignee) {
+        auditLogHelpers.taskReassigned(
+          taskId, 
+          task.title, 
+          task.assigneeId ? employees.find(emp => emp.id === task.assigneeId)?.name || 'Unassigned' : 'Unassigned',
+          newAssignee.name,
+          currentRole
+        );
+      }
+    }
+
+    updateTaskMutation.mutate(
+      { id: taskId, data },
+      {
+        onSuccess: (updatedTask) => {
+          // Log the update for audit purposes
+          auditLogHelpers.taskUpdated(taskId, task.title, currentRole);
+          toast.success('Task updated successfully');
+          setIsTaskModalOpen(false);
+          setSelectedTask(null);
+        },
+        onError: (error) => {
+          toast.error('Failed to update task');
+          console.error('Task update error:', error);
+        },
+      }
+    );
+  };
+
+  /**
+   * Handles deleting a task
+   * @param taskId - ID of the task to delete
+   */
+  const handleTaskDelete = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Permission checks for task deletion
+    if (!permissions.canDeleteTask) {
+      toast.error('You do not have permission to delete tasks');
+      return;
+    }
+
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser.id) {
+      toast.error('You can only delete your own tasks');
+      return;
+    }
+
+    deleteTaskMutation.mutate(taskId, {
+      onSuccess: () => {
+        // Log the deletion for audit purposes
+        auditLogHelpers.taskDeleted(taskId, task.title, currentRole);
+        toast.success('Task deleted successfully');
+        setIsTaskModalOpen(false);
+        setSelectedTask(null);
+      },
+      onError: (error) => {
+        toast.error('Failed to delete task');
+        console.error('Task deletion error:', error);
+      },
+    });
+  };
+
+  /**
+   * Handles creating a new task
+   * @param data - New task data
+   */
+  const handleCreateTask = (data: CreateTaskData) => {
+    if (!permissions.canCreateTask) {
+      toast.error('You do not have permission to create tasks');
+      return;
+    }
+
+    createTaskMutation.mutate(data, {
+      onSuccess: (newTask) => {
+        // Log the task creation for audit purposes
+        auditLogHelpers.taskCreated(newTask.id, newTask.title, currentRole);
+        toast.success('Task created successfully');
+        setIsCreateTaskModalOpen(false);
+      },
+      onError: (error) => {
+        toast.error('Failed to create task');
+        console.error('Task creation error:', error);
+      },
+    });
+  };
+
+  /**
+   * Handles creating a new employee
+   * @param data - New employee data
+   */
+  const handleCreateEmployee = (data: CreateEmployeeData) => {
+    if (!permissions.canCreateEmployee) {
+      toast.error('You do not have permission to create employees');
+      return;
+    }
+
+    createEmployeeMutation.mutate(data, {
+      onSuccess: (newEmployee) => {
+        // Log the employee creation for audit purposes
+        auditLogHelpers.employeeCreated(newEmployee.id, newEmployee.name, currentRole);
+        toast.success('Employee added successfully');
+        setIsEmployeeModalOpen(false);
+      },
+      onError: (error) => {
+        toast.error('Failed to add employee');
+        console.error('Employee creation error:', error);
+      },
+    });
+  };
+
+  /**
+   * Handles role changes from the role switcher
+   * @param newRole - New role to switch to
+   */
+  const handleRoleChange = (newRole: Role) => {
+    onRoleChange(newRole);
+    // Log the role change for audit purposes
+    auditLogHelpers.roleChanged(currentUser.id, currentUser.name, currentRole, newRole);
+  };
+
+  /**
+   * Handles task color changes from individual task cards
+   * @param taskId - ID of the task to update
+   * @param color - New color value or null to reset to default
+   */
+  const handleTaskColorChange = (taskId: string, color: string | null) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Permission checks for task color updates
+    if (!permissions.canEditTask) {
+      toast.error('You do not have permission to update tasks');
+      return;
+    }
+
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser.id) {
+      toast.error('You can only update your own tasks');
+      return;
+    }
+
+    updateTaskMutation.mutate(
+      { id: taskId, data: { customColor: color } },
+      {
+        onSuccess: (updatedTask) => {
+          // Log the color change for audit purposes
+          auditLogHelpers.taskUpdated(taskId, task.title, currentRole, `Task color ${color ? 'changed' : 'reset'}`);
+          toast.success(color ? 'Task color updated successfully' : 'Task color reset to default');
+        },
+        onError: (error) => {
+          toast.error('Failed to update task color');
+          console.error('Task color update error:', error);
+        },
+      }
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">
+      {/* Application Header with navigation and user info */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
+            {/* Logo and brand */}
             <div className="flex items-center gap-3">
               <ZiraLogo size={32} variant="sky" showText={false} />
-              <span className="text-xl font-bold text-gray-900">ZIRA</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">ZIRA</span>
             </div>
             
+            {/* Header actions and user profile */}
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               <RoleSwitcher currentRole={currentRole} onRoleChange={handleRoleChange} />
+              {/* Show employee management button only for users with permission */}
               {permissions.canCreateEmployee && (
                 <Button 
                   variant="outline" 
@@ -354,6 +449,7 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
               >
                 {showAuditLog ? 'Hide' : 'Show'} Audit Log
               </Button>
+              {/* User profile display */}
               <div className="flex items-center space-x-2">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback>
@@ -361,7 +457,7 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-sm">
-                  <p className="font-medium text-gray-900">{currentUser.name}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{currentUser.name}</p>
                   <Badge variant="secondary" className="text-xs">
                     {currentUser.role}
                   </Badge>
@@ -372,13 +468,13 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main application content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Action Buttons */}
+        {/* Page header with title and action buttons */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">ZIRA Kanban Board</h2>
-            <p className="text-gray-600">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">ZIRA Kanban Board</h2>
+            <p className="text-gray-600 dark:text-gray-400">
               {permissions.canViewAllTasks 
                 ? currentRole === 'employee' 
                   ? 'View all tasks and collaborate on the board'
@@ -388,6 +484,7 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
             </p>
           </div>
           
+          {/* Action buttons based on user permissions */}
           <div className="flex space-x-3">
             {permissions.canCreateTask && (
               <Button onClick={() => setIsCreateTaskModalOpen(true)}>
@@ -402,16 +499,21 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
           </div>
         </div>
 
-        {/* Audit Log */}
+        {/* Audit log section - conditionally shown */}
         {showAuditLog && (
           <div className="mb-6">
             <AuditLog 
               logs={auditLogService.getLogs()} 
+              currentUserRole={currentRole}
+              onTaskUpdate={() => {
+                // Refresh tasks data when a task is restored
+                queryClient.invalidateQueries({ queryKey: ['tasks'] });
+              }}
             />
           </div>
         )}
 
-        {/* Kanban Board */}
+        {/* Kanban board with scrollable container */}
         <div 
           className="h-[calc(100vh-200px)] 
                      overflow-x-hidden 
@@ -422,11 +524,14 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
             employees={employees}
             onTaskClick={handleTaskClick}
             onTaskStatusChange={handleTaskStatusChange}
+            onTaskColorChange={handleTaskColorChange}
+            canEditColors={permissions.canEditTask}
+            isAdmin={currentRole === 'admin'}
           />
         </div>
       </main>
 
-      {/* Modals */}
+      {/* Modal components for task and employee management */}
       <TaskModal
         task={selectedTask}
         employees={employees}
@@ -444,13 +549,13 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
         isLoading={createEmployeeMutation.isPending}
       />
 
-      {/* Create Task Modal */}
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => setIsCreateTaskModalOpen(false)}
         onSubmit={handleCreateTask}
         employees={employees}
         isLoading={createTaskMutation.isPending}
+        currentRole={currentRole}
       />
 
       <Toaster />
@@ -458,25 +563,34 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
   );
 }
 
+/**
+ * AppContent component handles routing between different pages
+ * Provides navigation between the main dashboard and employee management
+ */
 function AppContent() {
   const [currentRole, setCurrentRole] = useState<Role>('admin');
 
   return (
-    <Routes>
-      <Route path="/" element={<Dashboard currentRole={currentRole} onRoleChange={setCurrentRole} />} />
-      <Route path="/employees" element={<EmployeeManagement currentRole={currentRole} />} />
-    </Routes>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Dashboard currentRole={currentRole} onRoleChange={setCurrentRole} />} />
+        <Route path="/employees" element={<EmployeeManagement currentRole={currentRole} />} />
+      </Routes>
+    </Router>
   );
 }
 
+/**
+ * Main App component that wraps the entire application
+ * Provides theme context and error boundary protection
+ */
 export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <Router>
+        <ThemeProvider>
           <AppContent />
-        </Router>
-        <Toaster position="top-right" />
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

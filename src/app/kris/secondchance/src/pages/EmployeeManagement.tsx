@@ -44,10 +44,10 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
   // Check if user has admin access
   if (!permissions.canCreateEmployee) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
         <ZiraLogo size={48} variant="sky" />
-        <h2 className="text-2xl font-bold text-red-600">ZIRA Access Denied</h2>
-        <p className="text-gray-600 text-center max-w-md">
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">ZIRA Access Denied</h2>
+        <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
           You don't have permission to access the Employee Management page.
         </p>
         <Button onClick={() => navigate('/')}>
@@ -121,33 +121,33 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
   const getRoleColor = (role: Role) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
       case 'manager':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200';
       case 'employee':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   };
 
   if (isLoading) {
     return (
-              <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-          <ZiraLogo size={48} variant="sky" />
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
-          <span className="text-xl font-semibold text-muted-foreground">Loading ZIRA...</span>
-          <p className="text-gray-600">Loading employee data</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
+        <ZiraLogo size={48} variant="sky" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
+        <span className="text-xl font-semibold text-muted-foreground">Loading ZIRA...</span>
+        <p className="text-gray-600 dark:text-gray-400">Loading employee data</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
         <ZiraLogo size={48} variant="sky" />
-        <h2 className="text-2xl font-bold text-red-600">ZIRA Error</h2>
-        <p className="text-gray-600 text-center max-w-md">
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">ZIRA Error</h2>
+        <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
           Failed to load employee data. Please try again.
         </p>
         <Button onClick={() => window.location.reload()}>
@@ -158,9 +158,9 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -168,7 +168,7 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
                 ← Back to ZIRA Dashboard
               </Button>
               <ZiraLogo size={24} showText={false} variant="sky" />
-              <h1 className="text-xl font-semibold text-gray-900">ZIRA Employee Management</h1>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">ZIRA Employee Management</h1>
             </div>
             <div className="flex items-center space-x-2">
               <Badge variant="secondary">
@@ -183,15 +183,15 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Role Statistics */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">ZIRA Team Role Distribution</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">ZIRA Team Role Distribution</h2>
           <div className="flex space-x-4">
-            <Badge className="bg-red-100 text-red-800">
+            <Badge className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
               {roleStats.admin || 0} Admins
             </Badge>
-            <Badge className="bg-blue-100 text-blue-800">
+            <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
               {roleStats.manager || 0} Managers
             </Badge>
-            <Badge className="bg-green-100 text-green-800">
+            <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
               {roleStats.employee || 0} Employees
             </Badge>
           </div>
@@ -204,7 +204,7 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
+              className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
           <Button onClick={() => setIsAddDialogOpen(true)}>
@@ -213,23 +213,23 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
         </div>
 
         {/* Employees Table */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>ZIRA Team Members</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-white">ZIRA Team Members</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="border-gray-200 dark:border-gray-700">
+                  <TableHead className="text-gray-900 dark:text-white">Name</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white">Email</TableHead>
+                  <TableHead className="text-gray-900 dark:text-white">Role</TableHead>
+                  <TableHead className="text-right text-gray-900 dark:text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEmployees.length === 0 ? (
-                  <TableRow>
+                  <TableRow className="border-gray-200 dark:border-gray-700">
                     <TableCell colSpan={4} className="text-center py-12">
                       <EmptyState
                         title={searchTerm ? "No employees found" : "No team members yet"}
@@ -247,9 +247,9 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
                   </TableRow>
                 ) : (
                   filteredEmployees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="font-medium">{employee.name}</TableCell>
-                      <TableCell>{employee.email}</TableCell>
+                    <TableRow key={employee.id} className="border-gray-200 dark:border-gray-700">
+                      <TableCell className="font-medium text-gray-900 dark:text-white">{employee.name}</TableCell>
+                      <TableCell className="text-gray-700 dark:text-gray-300">{employee.email}</TableCell>
                       <TableCell>
                         <Badge className={getRoleColor(employee.role)}>
                           {employee.role}
@@ -368,26 +368,28 @@ function AddEmployeeDialog({ isOpen, onClose, onSubmit, isLoading }: AddEmployee
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="block">Name</Label>
+            <Label htmlFor="name" className="block text-gray-900 dark:text-white">Name</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email" className="block">Email</Label>
+            <Label htmlFor="email" className="block text-gray-900 dark:text-white">Email</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="role" className="block">Role</Label>
+            <Label htmlFor="role" className="block text-gray-900 dark:text-white">Role</Label>
             <Select
               value={formData.role}
               onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
@@ -440,26 +442,28 @@ function EditEmployeeDialog({ employee, onClose, onSubmit, isLoading }: EditEmpl
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name" className="block">Name</Label>
+            <Label htmlFor="edit-name" className="block text-gray-900 dark:text-white">Name</Label>
             <Input
               id="edit-name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-email" className="block">Email</Label>
+            <Label htmlFor="edit-email" className="block text-gray-900 dark:text-white">Email</Label>
             <Input
               id="edit-email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-role" className="block">Role</Label>
+            <Label htmlFor="edit-role" className="block text-gray-900 dark:text-white">Role</Label>
             <Select
               value={formData.role}
               onValueChange={(value) => setFormData({ ...formData, role: value as Role })}

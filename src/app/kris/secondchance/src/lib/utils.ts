@@ -1,12 +1,19 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+/**
+ * Utility function to merge Tailwind CSS classes with conflict resolution
+ * Combines clsx for conditional classes and twMerge for Tailwind class deduplication
+ * @param inputs - Array of class values (strings, objects, arrays, etc.)
+ * @returns Merged and deduplicated CSS class string
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 /**
  * Normalizes task status to handle case sensitivity and common variations
+ * Ensures consistent status values across the application regardless of API data format
  * @param status - The status string to normalize
  * @returns Normalized status or null if invalid
  */
@@ -15,7 +22,7 @@ export function normalizeTaskStatus(status: string | null | undefined): 'pending
   
   const normalized = status.toLowerCase().trim();
   
-  // Handle common variations
+  // Handle common variations and aliases for each status
   switch (normalized) {
     case 'pending':
       return 'pending';
@@ -41,8 +48,9 @@ export function normalizeTaskStatus(status: string | null | undefined): 'pending
 
 /**
  * Debug function to check if a date string is valid
+ * Provides detailed validation information for troubleshooting date issues
  * @param dateString - The date string to validate
- * @returns Object with validation results
+ * @returns Object with validation results including parsed date and error details
  */
 export function debugDate(dateString: string | null | undefined) {
   if (!dateString) {
@@ -72,6 +80,7 @@ export function debugDate(dateString: string | null | undefined) {
 
 /**
  * Converts a Unix timestamp to a readable date string
+ * Handles Unix timestamps (seconds since epoch) and converts them to human-readable format
  * @param unixTimestamp - Unix timestamp (seconds since epoch)
  * @param fallback - Fallback text if timestamp is invalid
  * @returns Formatted date string or fallback text
@@ -82,7 +91,7 @@ export function formatUnixTimestamp(unixTimestamp: number | null | undefined, fa
   }
 
   try {
-    // Convert Unix timestamp (seconds) to milliseconds
+    // Convert Unix timestamp (seconds) to milliseconds for JavaScript Date constructor
     const date = new Date(unixTimestamp * 1000);
     
     // Check if the date is valid
@@ -90,7 +99,7 @@ export function formatUnixTimestamp(unixTimestamp: number | null | undefined, fa
       return fallback;
     }
 
-    // Format the date
+    // Format the date with both date and time information
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -107,7 +116,8 @@ export function formatUnixTimestamp(unixTimestamp: number | null | undefined, fa
 
 /**
  * Generates a proper ISO timestamp string for API usage
- * @returns ISO timestamp string
+ * Creates standardized timestamps for database operations and API calls
+ * @returns ISO timestamp string in UTC format
  */
 export function generateTimestamp(): string {
   return new Date().toISOString();
@@ -115,6 +125,7 @@ export function generateTimestamp(): string {
 
 /**
  * Safely formats a date string with fallback handling
+ * Provides robust date formatting with comprehensive error handling
  * @param dateString - The date string to format
  * @param fallback - Fallback text if date is invalid (default: "Not available")
  * @returns Formatted date string or fallback text
@@ -134,7 +145,7 @@ export function formatDate(dateString: string | null | undefined, fallback: stri
       return fallback;
     }
 
-    // Format the date
+    // Format the date with both date and time information
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -151,6 +162,7 @@ export function formatDate(dateString: string | null | undefined, fallback: stri
 
 /**
  * Safely formats a date string for display in a more compact format
+ * Provides date-only formatting without time for space-constrained displays
  * @param dateString - The date string to format
  * @param fallback - Fallback text if date is invalid (default: "N/A")
  * @returns Formatted date string or fallback text
@@ -168,7 +180,7 @@ export function formatDateCompact(dateString: string | null | undefined, fallbac
       return fallback;
     }
 
-    // Format the date in a more compact way
+    // Format the date in a compact format (date only, no time)
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -182,6 +194,7 @@ export function formatDateCompact(dateString: string | null | undefined, fallbac
 
 /**
  * Formats a date string for audit log display with both date and time
+ * Provides detailed timestamp formatting for audit trail entries
  * @param dateString - The date string to format
  * @param fallback - Fallback text if date is invalid (default: "Time not available")
  * @returns Formatted date and time string or fallback text
@@ -199,7 +212,7 @@ export function formatAuditLogDate(dateString: string | null | undefined, fallba
       return fallback;
     }
 
-    // Format the date for audit log display
+    // Format the date for audit log display with seconds for precise timing
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',

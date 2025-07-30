@@ -1,7 +1,7 @@
-// Export types
+// Export employee types for TypeScript support
 export type { Employee, CreateEmployeeData, Role } from './types';
 
-// Export hooks
+// Export employee data management hooks
 export { 
   useEmployees, 
   useCreateEmployee, 
@@ -9,8 +9,9 @@ export {
   useDeleteEmployee 
 } from './hooks/useEmployees';
 
+// Export employee-specific hooks
 export { useEmployeeById } from './hooks/useEmployeeById';
 export { useEmployeeTasks } from './hooks/useEmployeeTasks';
 
-// Export components
+// Export employee components for external use
 export { EmployeeFormDialog } from './components/EmployeeFormDialog'; 
