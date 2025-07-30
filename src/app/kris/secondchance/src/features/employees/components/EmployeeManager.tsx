@@ -55,7 +55,7 @@ export function EmployeeManager({ onEmployeeSelect }: EmployeeManagerProps) {
       ) : (
         /* Employee list with click handler */
         <EmployeeList 
-          employees={employees} 
+          employees={employees as Employee[]} 
           onEmployeeClick={onEmployeeSelect}
         />
       )}

@@ -14,7 +14,7 @@ export function useEmployeeById(id: string) {
     queryFn: async (): Promise<Employee | undefined> => {
       // Fetch all employees and find the one with matching ID
       const employees = await api.employees.getAll();
-      return employees.find((emp: Employee) => emp.id === id);
+      return (employees as Employee[]).find((emp: Employee) => emp.id === id);
     },
     enabled: !!id, // Only run query if ID is provided
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes

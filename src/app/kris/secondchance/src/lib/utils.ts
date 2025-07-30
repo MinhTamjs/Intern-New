@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { TaskStatus } from '../features/tasks/types';
 
 /**
  * Utility function to merge Tailwind CSS classes with conflict resolution
@@ -12,38 +13,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Normalizes task status to handle case sensitivity and common variations
- * Ensures consistent status values across the application regardless of API data format
- * @param status - The status string to normalize
+ * Normalize task status to handle case variations
+ * @param status - Raw status string
  * @returns Normalized status or null if invalid
  */
-export function normalizeTaskStatus(status: string | null | undefined): 'pending' | 'in-progress' | 'in-review' | 'done' | null {
-  if (!status) return null;
+export function normalizeTaskStatus(status: string): TaskStatus | null {
+  const normalized = status.toLowerCase().replace(/\s+/g, '-');
   
-  const normalized = status.toLowerCase().trim();
+  const validStatuses: TaskStatus[] = ['pending', 'in-progress', 'in-review', 'done'];
   
-  // Handle common variations and aliases for each status
-  switch (normalized) {
-    case 'pending':
-      return 'pending';
-    case 'in-progress':
-    case 'inprogress':
-    case 'in_progress':
-    case 'progress':
-      return 'in-progress';
-    case 'in-review':
-    case 'inreview':
-    case 'in_review':
-    case 'review':
-      return 'in-review';
-    case 'done':
-    case 'completed':
-    case 'finished':
-      return 'done';
-    default:
-      console.warn('Unknown task status:', status, 'normalized to:', normalized);
-      return null;
-  }
+  return validStatuses.includes(normalized as TaskStatus) ? normalized as TaskStatus : null;
 }
 
 /**
@@ -124,40 +103,19 @@ export function generateTimestamp(): string {
 }
 
 /**
- * Safely formats a date string with fallback handling
- * Provides robust date formatting with comprehensive error handling
- * @param dateString - The date string to format
- * @param fallback - Fallback text if date is invalid (default: "Not available")
- * @returns Formatted date string or fallback text
+ * Format date to readable string
+ * @param date - Date to format
+ * @returns Formatted date string
  */
-export function formatDate(dateString: string | null | undefined, fallback: string = "Not available"): string {
-  if (!dateString) {
-    console.warn('formatDate: Received null or undefined date string');
-    return fallback;
-  }
-
-  try {
-    const date = new Date(dateString);
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      console.warn('formatDate: Invalid date string:', dateString);
-      return fallback;
-    }
-
-    // Format the date with both date and time information
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch (error) {
-    console.warn('formatDate: Error formatting date:', dateString, error);
-    return fallback;
-  }
+export function formatDate(date: Date | string): string {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /**
@@ -226,4 +184,74 @@ export function formatAuditLogDate(dateString: string | null | undefined, fallba
     console.warn('formatAuditLogDate: Error formatting date:', dateString, error);
     return fallback;
   }
+}
+
+/**
+ * Get relative time string
+ * @param date - Date to compare
+ * @returns Relative time string
+ */
+export function getRelativeTime(date: Date | string): string {
+  const now = new Date();
+  const target = new Date(date);
+  const diffInSeconds = Math.floor((now.getTime() - target.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  
+  return formatDate(target);
+}
+
+/**
+ * Generate unique ID
+ * @returns Unique ID string
+ */
+export function generateId(): string {
+  return Math.random().toString(36).substr(2, 9);
+}
+
+/**
+ * Debounce function execution
+ * @param func - Function to debounce
+ * @param wait - Wait time in milliseconds
+ * @returns Debounced function
+ */
+export function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+/**
+ * Truncate text to specified length
+ * @param text - Text to truncate
+ * @param maxLength - Maximum length
+ * @returns Truncated text
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
+/**
+ * Capitalize first letter of string
+ * @param str - String to capitalize
+ * @returns Capitalized string
+ */
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Convert status to display text
+ * @param status - Task status
+ * @returns Display text
+ */
+export function statusToDisplayText(status: TaskStatus): string {
+  return status.split('-').map(capitalize).join(' ');
 }

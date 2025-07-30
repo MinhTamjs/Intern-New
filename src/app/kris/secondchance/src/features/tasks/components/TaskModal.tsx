@@ -261,7 +261,7 @@ export function TaskModal({
                 <div className="text-left">
                   <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Created</Label>
                   <p className="text-gray-700 dark:text-gray-300 text-left mt-1">
-                    {task.createdAt ? formatDate(task.createdAt, "Not set") : 
+                    {task.createdAt ? formatDate(task.createdAt) : 
                      task.dueData ? formatUnixTimestamp(task.dueData, "Not set") : "Not set"}
                   </p>
                 </div>
@@ -269,7 +269,7 @@ export function TaskModal({
                 <div className="text-left">
                   <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Last Updated</Label>
                   <p className="text-gray-700 dark:text-gray-300 text-left mt-1">
-                    {task.updatedAt ? formatDate(task.updatedAt, "Not set") : 
+                    {task.updatedAt ? formatDate(task.updatedAt) : 
                      task.dueData ? formatUnixTimestamp(task.dueData, "Not set") : "Not set"}
                   </p>
                 </div>

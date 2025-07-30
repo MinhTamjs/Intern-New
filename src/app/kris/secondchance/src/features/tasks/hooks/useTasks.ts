@@ -78,7 +78,7 @@ export function useUpdateTask() {
     onSuccess: (updatedTask) => {
       // Optimistically update the cache by replacing the updated task
       queryClient.setQueryData(['tasks'], (oldTasks: Task[] = []) => {
-        return oldTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
+        return oldTasks.map(task => task.id === (updatedTask as Task).id ? updatedTask as Task : task);
       });
     },
     onError: (error) => {

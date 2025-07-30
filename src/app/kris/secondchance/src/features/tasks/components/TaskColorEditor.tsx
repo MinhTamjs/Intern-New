@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../components/ui/dialog';
 import { ColorPicker } from '../../../components/ColorPicker';
-import { useTheme } from '../../../lib/useTheme';
+
 import { getContrastTextColor, isValidHexColor, normalizeHexColor } from '../../../lib/themeUtils';
 import type { Task } from '../types';
 
@@ -82,9 +82,8 @@ export function TaskColorEditor({ task, onColorChange, disabled = false }: TaskC
           <div className="space-y-2">
             <label className="text-sm font-medium">Task Background Color</label>
             <ColorPicker
-              selectedColor={tempColor}
+              color={tempColor}
               onColorChange={handleColorChange}
-              disabled={disabled}
             />
           </div>
 

@@ -1,13 +1,12 @@
 import { createContext } from 'react';
 
-// Define theme types
+// Theme type definition
 export type Theme = 'light' | 'dark';
 
 // Theme context interface
-interface ThemeContextType {
+export interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
 }
 
 // Create theme context

@@ -1,58 +1,39 @@
 import { Button } from './ui/button';
 import { ZiraLogo } from './ZiraLogo';
 
-// Props interface for the EmptyState component
+// Empty state props
 interface EmptyStateProps {
-  title: string; // Main heading for the empty state
-  description: string; // Descriptive text explaining the empty state
-  action?: { // Optional action button
-    label: string; // Button text
-    onClick: () => void; // Click handler for the action
+  title: string;
+  description: string;
+  action?: {
+    label: string;
+    onClick: () => void;
   };
-  variant?: 'tasks' | 'employees' | '404'; // Context variant for appropriate icon and styling
 }
 
 /**
- * EmptyState component displays a user-friendly message when no data is available
- * Provides contextual icons, branding, and optional action buttons
- * Used throughout the application for consistent empty state messaging
+ * Empty state component
+ * Shows when no data is available
  */
-export function EmptyState({ title, description, action, variant = 'tasks' }: EmptyStateProps) {
-  /**
-   * Returns appropriate emoji icon based on the context variant
-   * Provides visual context for different types of empty states
-   * @returns Emoji string representing the context
-   */
-  const getIcon = () => {
-    switch (variant) {
-      case 'tasks':
-        return '📋'; // Clipboard for task-related empty states
-      case 'employees':
-        return '👥'; // People for employee-related empty states
-      case '404':
-        return '🔍'; // Magnifying glass for search/not found states
-      default:
-        return '📋'; // Default to clipboard icon
-    }
-  };
-
+export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
-      {/* ZIRA branding logo */}
-      <ZiraLogo size={48} variant="sky" />
+    <div className="text-center py-12">
+      {/* Logo */}
+      <ZiraLogo size={64} variant="sky" className="mx-auto mb-4" />
       
-      {/* Contextual emoji icon */}
-      <div className="text-6xl mb-4">{getIcon()}</div>
+      {/* Title */}
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        {title}
+      </h3>
       
-      {/* Main heading */}
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h3>
+      {/* Description */}
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+        {description}
+      </p>
       
-      {/* Descriptive text with max width for readability */}
-      <p className="text-gray-600 dark:text-gray-400 max-w-md">{description}</p>
-      
-      {/* Optional action button */}
+      {/* Action button */}
       {action && (
-        <Button onClick={action.onClick} className="mt-4">
+        <Button onClick={action.onClick}>
           {action.label}
         </Button>
       )}

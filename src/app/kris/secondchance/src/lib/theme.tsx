@@ -2,58 +2,43 @@ import React, { useEffect, useState } from 'react';
 import { ThemeContext } from './themeContext';
 import type { Theme } from './themeContext';
 
-// Theme provider component
+// Theme provider props
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 /**
- * ThemeProvider manages the application's theme state
- * Provides theme context to child components and handles localStorage persistence
+ * Theme provider component
+ * Manages theme state and localStorage persistence
  */
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  // Theme state
+  const [theme, setTheme] = useState<Theme>('light');
 
   // Load theme from localStorage on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('zira-theme') as Theme;
-    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-      setThemeState(savedTheme);
+    const savedTheme = localStorage.getItem('theme') as Theme;
+    if (savedTheme) {
+      setTheme(savedTheme);
     }
   }, []);
 
-  // Apply theme to document and save to localStorage
+  // Apply theme to document
   useEffect(() => {
-    const root = document.documentElement;
-    
-    // Remove existing theme classes
+    const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
-    
-    // Add current theme class
     root.classList.add(theme);
-    
-    // Save to localStorage
-    localStorage.setItem('zira-theme', theme);
-    
-    // Update meta theme-color for mobile browsers
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', theme === 'dark' ? '#1f2937' : '#ffffff');
-    }
   }, [theme]);
 
-  // Toggle between light and dark themes
+  // Toggle theme function
   const toggleTheme = () => {
-    setThemeState(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  // Set specific theme
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

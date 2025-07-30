@@ -352,4 +352,43 @@ export const auditLogHelpers = {
       details: `Employee "${employeeName}" was deleted`,
     });
   },
+
+  /**
+   * Logs role change events
+   * @param previousRole - Previous role
+   * @param newRole - New role
+   */
+  roleChanged: (previousRole: Role, newRole: Role) => {
+    auditLogService.addLog({
+      actionType: 'EMPLOYEE_ROLE_CHANGED',
+      entityType: 'employee',
+      entityId: 'current-user',
+      entityName: 'Current User',
+      userRole: previousRole,
+      details: `User role changed from "${previousRole}" to "${newRole}"`,
+      previousValue: previousRole,
+      newValue: newRole,
+    });
+  },
+
+  /**
+   * Logs task reassignment events
+   * @param taskId - ID of the task
+   * @param taskTitle - Title of the task
+   * @param previousAssignee - Previous assignee name
+   * @param newAssignee - New assignee name
+   * @param userRole - Role of the user who reassigned the task
+   */
+  taskReassigned: (taskId: string, taskTitle: string, previousAssignee: string, newAssignee: string, userRole: Role) => {
+    auditLogService.addLog({
+      actionType: 'TASK_ASSIGNEE_UPDATED',
+      entityType: 'task',
+      entityId: taskId,
+      entityName: taskTitle,
+      userRole,
+      details: `Task reassigned from "${previousAssignee}" to "${newAssignee}"`,
+      previousValue: previousAssignee,
+      newValue: newAssignee,
+    });
+  },
 }; 

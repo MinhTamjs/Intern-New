@@ -167,9 +167,8 @@ export function TaskForm({ employees, onSubmit, onCancel, isLoading = false, cur
             Task Color (Optional)
           </Label>
           <ColorPicker
-            selectedColor={formData.customColor}
+            color={formData.customColor || '#ffffff'}
             onColorChange={(color) => handleInputChange('customColor', color || '')}
-            disabled={isLoading}
           />
         </div>
       )}

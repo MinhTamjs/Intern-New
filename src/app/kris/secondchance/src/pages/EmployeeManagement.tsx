@@ -1,124 +1,103 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
+import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../features/employees';
-import { getRolePermissions } from '../lib/roleManager';
-import { auditLogHelpers } from '../lib/auditLog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ZiraLogo } from '../components/ZiraLogo';
-import { EmptyState } from '../components/EmptyState';
-import type { Role } from '../features/employees/types';
+import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../features/employees';
+import type { Role, Employee } from '../features/employees/types';
 
-interface EmployeeFormData {
-  name: string;
-  email: string;
-  role: Role;
-}
-
+// Props for the EmployeeManagement component
 interface EmployeeManagementProps {
-  currentRole: Role;
+  currentRole: Role; // Current user's role for permission checks
 }
 
+/**
+ * EmployeeManagement page - handles employee CRUD operations
+ * Shows employee list, allows creating/editing/deleting employees
+ */
 export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
   const navigate = useNavigate();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<{ id: string; data: EmployeeFormData } | null>(null);
-  const [deletingEmployee, setDeletingEmployee] = useState<{ id: string; name: string } | null>(null);
+  
+  // Form state for creating/editing employees
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: 'employee' as Role
+  });
+  
+  // Modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  
+  // Search state
   const [searchTerm, setSearchTerm] = useState('');
 
-  const permissions = getRolePermissions(currentRole);
-
+  // Data fetching hooks
   const { data: employees = [], isLoading, error } = useEmployees();
   const createEmployeeMutation = useCreateEmployee();
   const updateEmployeeMutation = useUpdateEmployee();
   const deleteEmployeeMutation = useDeleteEmployee();
 
-  // Check if user has admin access
-  if (!permissions.canCreateEmployee) {
+  // Check if user has permission to manage employees
+  const canManageEmployees = currentRole === 'admin';
+
+  // Redirect if no permission
+  useEffect(() => {
+    if (!canManageEmployees) {
+      toast.error('Access denied. Admin privileges required.');
+      navigate('/');
+    }
+  }, [canManageEmployees, navigate]);
+
+  // Loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
         <ZiraLogo size={48} variant="sky" />
-        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">ZIRA Access Denied</h2>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
+        <span className="text-xl font-semibold text-muted-foreground">Loading ZIRA...</span>
+        <p className="text-gray-600 dark:text-gray-400">Loading employee data</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
+        <ZiraLogo size={48} variant="sky" />
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">ZIRA Error</h2>
         <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
-          You don't have permission to access the Employee Management page.
+          Failed to load employee data. Please try again later.
         </p>
-        <Button onClick={() => navigate('/')}>
-          Return to ZIRA Dashboard
-        </Button>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
     );
   }
 
   // Filter employees based on search term
-  const filteredEmployees = employees.filter(employee =>
+  const filteredEmployees = (employees as Employee[]).filter((employee: Employee) =>
     employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate role statistics
-  const roleStats = employees.reduce((acc, employee) => {
+  // Get role statistics
+  const roleStats = (employees as Employee[]).reduce((acc: Record<string, number>, employee: Employee) => {
     acc[employee.role] = (acc[employee.role] || 0) + 1;
     return acc;
-  }, {} as Record<Role, number>);
+  }, {} as Record<string, number>);
 
-  const handleAddEmployee = (data: EmployeeFormData) => {
-    createEmployeeMutation.mutate(data, {
-      onSuccess: (newEmployee) => {
-        auditLogHelpers.employeeCreated(newEmployee.id, newEmployee.name, currentRole);
-        toast.success('Employee added successfully');
-        setIsAddDialogOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to add employee');
-        console.error('Employee creation error:', error);
-      },
-    });
-  };
-
-  const handleUpdateEmployee = (id: string, data: Partial<EmployeeFormData>) => {
-    updateEmployeeMutation.mutate(
-      { id, data },
-      {
-        onSuccess: (updatedEmployee) => {
-          auditLogHelpers.employeeRoleChanged(id, updatedEmployee.name, 'previous', updatedEmployee.role, currentRole);
-          toast.success('Employee updated successfully');
-          setEditingEmployee(null);
-        },
-        onError: (error) => {
-          toast.error('Failed to update employee');
-          console.error('Employee update error:', error);
-        },
-      }
-    );
-  };
-
-  const handleDeleteEmployee = (id: string) => {
-    const employee = employees.find(emp => emp.id === id);
-    if (!employee) return;
-
-    deleteEmployeeMutation.mutate(id, {
-      onSuccess: () => {
-        auditLogHelpers.employeeDeleted(id, employee.name, currentRole);
-        toast.success('Employee deleted successfully');
-        setDeletingEmployee(null);
-      },
-      onError: (error) => {
-        toast.error('Failed to delete employee');
-        console.error('Employee deletion error:', error);
-      },
-    });
-  };
-
-  const getRoleColor = (role: Role) => {
+  // Get color for role badge
+  const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
         return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
@@ -131,31 +110,64 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
-        <ZiraLogo size={48} variant="sky" />
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
-        <span className="text-xl font-semibold text-muted-foreground">Loading ZIRA...</span>
-        <p className="text-gray-600 dark:text-gray-400">Loading employee data</p>
-      </div>
-    );
-  }
+  // Handle form submission for creating employee
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createEmployeeMutation.mutate(formData, {
+      onSuccess: () => {
+        toast.success('Employee created successfully');
+        setIsCreateModalOpen(false);
+        setFormData({ name: '', email: '', role: 'employee' });
+      },
+      onError: () => {
+        toast.error('Failed to create employee');
+      },
+    });
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#121212] flex flex-col items-center justify-center gap-4">
-        <ZiraLogo size={48} variant="sky" />
-        <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">ZIRA Error</h2>
-        <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
-          Failed to load employee data. Please try again.
-        </p>
-        <Button onClick={() => window.location.reload()}>
-          Retry
-        </Button>
-      </div>
+  // Handle form submission for editing employee
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEmployee) return;
+
+    updateEmployeeMutation.mutate(
+      { id: editingEmployee.id, data: formData },
+      {
+        onSuccess: () => {
+          toast.success('Employee updated successfully');
+          setIsEditModalOpen(false);
+          setEditingEmployee(null);
+          setFormData({ name: '', email: '', role: 'employee' });
+        },
+        onError: () => {
+          toast.error('Failed to update employee');
+        },
+      }
     );
-  }
+  };
+
+  // Handle employee deletion
+  const handleDelete = (employeeId: string) => {
+    deleteEmployeeMutation.mutate(employeeId, {
+      onSuccess: () => {
+        toast.success('Employee deleted successfully');
+      },
+      onError: () => {
+        toast.error('Failed to delete employee');
+      },
+    });
+  };
+
+  // Open edit modal
+  const handleEdit = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setFormData({
+      name: employee.name,
+      email: employee.email,
+      role: employee.role
+    });
+    setIsEditModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">
@@ -163,61 +175,65 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={() => navigate('/')}>
-                ← Back to ZIRA Dashboard
-              </Button>
-              <ZiraLogo size={24} showText={false} variant="sky" />
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">ZIRA Employee Management</h1>
+            <div className="flex items-center gap-3">
+              <ZiraLogo size={32} variant="sky" showText={false} />
+              <span className="text-xl font-bold text-gray-900 dark:text-white">ZIRA</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary">
-                {employees.length} Total Employees
-              </Badge>
-            </div>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              Back to Dashboard
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Role Statistics */}
+        {/* Page header */}
+        <div className="mb-8">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">ZIRA Employee Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Manage team members and their roles
+          </p>
+        </div>
+
+        {/* Role statistics */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">ZIRA Team Role Distribution</h2>
-          <div className="flex space-x-4">
+          <div className="flex gap-3">
             <Badge className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
-              {roleStats.admin || 0} Admins
+              Admins: {roleStats.admin || 0}
             </Badge>
             <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              {roleStats.manager || 0} Managers
+              Managers: {roleStats.manager || 0}
             </Badge>
             <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-              {roleStats.employee || 0} Employees
+              Employees: {roleStats.employee || 0}
             </Badge>
           </div>
         </div>
 
-        {/* Search and Add Employee */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-1 max-w-sm">
-            <Input
-              placeholder="Search employees..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            />
-          </div>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            Add Team Member
-          </Button>
-        </div>
-
-        {/* Employees Table */}
+        {/* Employee list */}
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white">ZIRA Team Members</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-gray-900 dark:text-white">ZIRA Team Members</CardTitle>
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                Add Employee
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Search input */}
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="Search employees..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              />
+            </div>
+
+            {/* Employee table */}
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-200 dark:border-gray-700">
@@ -228,266 +244,165 @@ export function EmployeeManagement({ currentRole }: EmployeeManagementProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.length === 0 ? (
-                  <TableRow className="border-gray-200 dark:border-gray-700">
-                    <TableCell colSpan={4} className="text-center py-12">
-                      <EmptyState
-                        title={searchTerm ? "No employees found" : "No team members yet"}
-                        description={searchTerm 
-                          ? "No employees match your search criteria. Try adjusting your search terms."
-                          : "Start building your ZIRA team by adding the first team member."
-                        }
-                        variant="employees"
-                        action={!searchTerm ? {
-                          label: "Add First Team Member",
-                          onClick: () => setIsAddDialogOpen(true)
-                        } : undefined}
-                      />
+                {filteredEmployees.map((employee: Employee) => (
+                  <TableRow key={employee.id} className="border-gray-200 dark:border-gray-700">
+                    <TableCell className="font-medium text-gray-900 dark:text-white">{employee.name}</TableCell>
+                    <TableCell className="text-gray-700 dark:text-gray-300">{employee.email}</TableCell>
+                    <TableCell>
+                      <Badge className={getRoleColor(employee.role)}>
+                        {employee.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(employee)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(employee.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredEmployees.map((employee) => (
-                    <TableRow key={employee.id} className="border-gray-200 dark:border-gray-700">
-                      <TableCell className="font-medium text-gray-900 dark:text-white">{employee.name}</TableCell>
-                      <TableCell className="text-gray-700 dark:text-gray-300">{employee.email}</TableCell>
-                      <TableCell>
-                        <Badge className={getRoleColor(employee.role)}>
-                          {employee.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingEmployee({
-                              id: employee.id,
-                              data: {
-                                name: employee.name,
-                                email: employee.email,
-                                role: employee.role,
-                              }
-                            })}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setDeletingEmployee({
-                              id: employee.id,
-                              name: employee.name,
-                            })}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
+
+        {/* Create employee modal */}
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Employee</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="block text-gray-900 dark:text-white">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="block text-gray-900 dark:text-white">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role" className="block text-gray-900 dark:text-white">Role</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value: Role) => setFormData({ ...formData, role: value })}
+                >
+                  <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="employee">Employee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" className="flex-1">
+                  Add Employee
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit employee modal */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Employee</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name" className="block text-gray-900 dark:text-white">Name</Label>
+                <Input
+                  id="edit-name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email" className="block text-gray-900 dark:text-white">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-role" className="block text-gray-900 dark:text-white">Role</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value: Role) => setFormData({ ...formData, role: value })}
+                >
+                  <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="employee">Employee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" className="flex-1">
+                  Update Employee
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Add Employee Dialog */}
-      <AddEmployeeDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onSubmit={handleAddEmployee}
-        isLoading={createEmployeeMutation.isPending}
-      />
-
-      {/* Edit Employee Dialog */}
-      {editingEmployee && (
-        <EditEmployeeDialog
-          employee={editingEmployee}
-          onClose={() => setEditingEmployee(null)}
-          onSubmit={(data) => handleUpdateEmployee(editingEmployee.id, data)}
-          isLoading={updateEmployeeMutation.isPending}
-        />
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingEmployee} onOpenChange={() => setDeletingEmployee(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete ZIRA Team Member</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{deletingEmployee?.name}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingEmployee && handleDeleteEmployee(deletingEmployee.id)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
-  );
-}
-
-// Add Employee Dialog Component
-interface AddEmployeeDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: EmployeeFormData) => void;
-  isLoading: boolean;
-}
-
-function AddEmployeeDialog({ isOpen, onClose, onSubmit, isLoading }: AddEmployeeDialogProps) {
-  const [formData, setFormData] = useState<EmployeeFormData>({
-    name: '',
-    email: '',
-    role: 'employee',
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-    setFormData({ name: '', email: '', role: 'employee' });
-  };
-
-  const handleClose = () => {
-    setFormData({ name: '', email: '', role: 'employee' });
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New ZIRA Team Member</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="block text-gray-900 dark:text-white">Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email" className="block text-gray-900 dark:text-white">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="role" className="block text-gray-900 dark:text-white">Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="employee">Employee</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Adding...' : 'Add Team Member'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// Edit Employee Dialog Component
-interface EditEmployeeDialogProps {
-  employee: { id: string; data: EmployeeFormData };
-  onClose: () => void;
-  onSubmit: (data: Partial<EmployeeFormData>) => void;
-  isLoading: boolean;
-}
-
-function EditEmployeeDialog({ employee, onClose, onSubmit, isLoading }: EditEmployeeDialogProps) {
-  const [formData, setFormData] = useState<EmployeeFormData>(employee.data);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit ZIRA Team Member</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-name" className="block text-gray-900 dark:text-white">Name</Label>
-            <Input
-              id="edit-name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-email" className="block text-gray-900 dark:text-white">Email</Label>
-            <Input
-              id="edit-email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-role" className="block text-gray-900 dark:text-white">Role</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value as Role })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="employee">Employee</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 } 

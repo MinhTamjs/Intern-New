@@ -63,7 +63,7 @@ export function useUpdateEmployee() {
     onSuccess: (updatedEmployee) => {
       // Optimistically update the cache by replacing the updated employee
       queryClient.setQueryData(['employees'], (oldEmployees: Employee[] = []) => {
-        return oldEmployees.map(employee => employee.id === updatedEmployee.id ? updatedEmployee : employee);
+        return oldEmployees.map(employee => employee.id === (updatedEmployee as Employee).id ? updatedEmployee as Employee : employee);
       });
     },
     onError: (error) => {

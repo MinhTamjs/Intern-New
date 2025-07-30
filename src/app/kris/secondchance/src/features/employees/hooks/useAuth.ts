@@ -15,7 +15,7 @@ export const useCurrentUser = () => {
       const employees = await api.auth.getCurrentUser();
       
       // Return first employee or fallback to admin user
-      return employees[0] || {
+      return (employees as Employee[])[0] || {
         id: '1',
         name: 'John Admin',
         email: 'john@company.com',

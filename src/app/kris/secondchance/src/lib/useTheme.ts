@@ -2,8 +2,8 @@ import { useContext } from 'react';
 import { ThemeContext } from './themeContext';
 
 /**
- * Hook to use theme context
- * @returns Theme context with current theme and theme management functions
+ * Custom hook to access theme context
+ * Provides theme state and toggle function
  */
 export function useTheme() {
   const context = useContext(ThemeContext);
