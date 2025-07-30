@@ -1,6 +1,7 @@
 import { Button } from './ui/button';
 import { ZiraLogo } from './ZiraLogo';
 
+// Empty state props
 interface EmptyStateProps {
   title: string;
   description: string;
@@ -8,31 +9,31 @@ interface EmptyStateProps {
     label: string;
     onClick: () => void;
   };
-  variant?: 'tasks' | 'employees' | '404';
 }
 
-export function EmptyState({ title, description, action, variant = 'tasks' }: EmptyStateProps) {
-  const getIcon = () => {
-    switch (variant) {
-      case 'tasks':
-        return '📋';
-      case 'employees':
-        return '👥';
-      case '404':
-        return '🔍';
-      default:
-        return '📋';
-    }
-  };
-
+/**
+ * Empty state component
+ * Shows when no data is available
+ */
+export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
-      <ZiraLogo size={48} variant="sky" />
-      <div className="text-6xl mb-4">{getIcon()}</div>
-      <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
-      <p className="text-gray-600 max-w-md">{description}</p>
+    <div className="text-center py-12">
+      {/* Logo */}
+      <ZiraLogo size={64} variant="sky" className="mx-auto mb-4" />
+      
+      {/* Title */}
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        {title}
+      </h3>
+      
+      {/* Description */}
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+        {description}
+      </p>
+      
+      {/* Action button */}
       {action && (
-        <Button onClick={action.onClick} className="mt-4">
+        <Button onClick={action.onClick}>
           {action.label}
         </Button>
       )}

@@ -1,124 +1,109 @@
-import type { Employee, CreateEmployeeData } from '../features/employees/types';
-import type { Task, CreateTaskData, UpdateTaskData } from '../features/tasks/types';
+// API base URL
+const API_BASE_URL = 'https://6881dc8866a7eb81224c5612.mockapi.io';
 
-// API Configuration and base setup
-export const API_CONFIG = {
-  BASE_URL: 'https://6881dc8866a7eb81224c5612.mockapi.io',
-  ENDPOINTS: {
-    EMPLOYEES: '/employees',
-    TASKS: '/tasks',
-  },
-  HEADERS: {
-    'Content-Type': 'application/json',
-  },
+// API endpoints
+const ENDPOINTS = {
+  tasks: '/tasks',
+  employees: '/employees',
 } as const;
 
-// Generic API client for making requests
-class ApiClient {
-  private baseURL: string;
-  private defaultHeaders: HeadersInit;
-  private timeout: number;
+/**
+ * Generic API request function
+ * @param endpoint - API endpoint
+ * @param options - Request options
+ * @returns Promise with response data
+ */
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
 
-  constructor(baseURL: string, defaultHeaders: HeadersInit = {}, timeout: number = 10000) {
-    this.baseURL = baseURL;
-    this.defaultHeaders = defaultHeaders;
-    this.timeout = timeout;
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const config: RequestInit = {
-      headers: {
-        ...this.defaultHeaders,
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    // Create AbortController for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...config,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      return response.json();
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error('Request timeout');
-        }
-        throw error;
-      }
-      
-      throw new Error('Unknown error occurred');
-    }
-  }
-
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint);
-  }
-
-  async post<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async put<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async delete(endpoint: string): Promise<void> {
-    return this.request<void>(endpoint, {
-      method: 'DELETE',
-    });
-  }
+  return response.json();
 }
 
-// Create API client instance
-export const apiClient = new ApiClient(API_CONFIG.BASE_URL, API_CONFIG.HEADERS);
+/**
+ * GET request helper
+ * @param endpoint - API endpoint
+ * @returns Promise with response data
+ */
+export async function apiGet<T>(endpoint: string): Promise<T> {
+  return apiRequest<T>(endpoint);
+}
 
-// API service functions
+/**
+ * POST request helper
+ * @param endpoint - API endpoint
+ * @param data - Request body data
+ * @returns Promise with response data
+ */
+export async function apiPost<T>(endpoint: string, data: any): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * PUT request helper
+ * @param endpoint - API endpoint
+ * @param data - Request body data
+ * @returns Promise with response data
+ */
+export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * DELETE request helper
+ * @param endpoint - API endpoint
+ * @returns Promise with response data
+ */
+export async function apiDelete<T>(endpoint: string): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    method: 'DELETE',
+  });
+}
+
+// Task API functions
+export const taskAPI = {
+  getAll: () => apiGet(ENDPOINTS.tasks),
+  getById: (id: string) => apiGet(`${ENDPOINTS.tasks}/${id}`),
+  getByAssignee: (assigneeId: string) => apiGet(`${ENDPOINTS.tasks}?assigneeId=${assigneeId}`),
+  create: (data: any) => apiPost(ENDPOINTS.tasks, data),
+  update: (id: string, data: any) => apiPut(`${ENDPOINTS.tasks}/${id}`, data),
+  delete: (id: string) => apiDelete(`${ENDPOINTS.tasks}/${id}`),
+};
+
+// Employee API functions
+export const employeeAPI = {
+  getAll: () => apiGet(ENDPOINTS.employees),
+  getById: (id: string) => apiGet(`${ENDPOINTS.employees}/${id}`),
+  create: (data: any) => apiPost(ENDPOINTS.employees, data),
+  update: (id: string, data: any) => apiPut(`${ENDPOINTS.employees}/${id}`, data),
+  delete: (id: string) => apiDelete(`${ENDPOINTS.employees}/${id}`),
+};
+
+// Auth API functions
+export const authAPI = {
+  getCurrentUser: () => apiGet(`${ENDPOINTS.employees}?limit=1`),
+};
+
+// Legacy API export for backward compatibility
 export const api = {
-  // Employee endpoints
-  employees: {
-    getAll: () => apiClient.get<Employee[]>(API_CONFIG.ENDPOINTS.EMPLOYEES),
-    create: (data: CreateEmployeeData) => apiClient.post<Employee>(API_CONFIG.ENDPOINTS.EMPLOYEES, data),
-    update: (id: string, data: Partial<CreateEmployeeData>) => apiClient.put<Employee>(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, data),
-    delete: (id: string) => apiClient.delete(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`),
-  },
-
-  // Task endpoints
-  tasks: {
-    getAll: () => apiClient.get<Task[]>(API_CONFIG.ENDPOINTS.TASKS),
-    getByAssignee: (assigneeId: string) => 
-      apiClient.get<Task[]>(`${API_CONFIG.ENDPOINTS.TASKS}?assigneeId=${assigneeId}`),
-    create: (data: CreateTaskData) => apiClient.post<Task>(API_CONFIG.ENDPOINTS.TASKS, data),
-    update: (id: string, data: UpdateTaskData) => apiClient.put<Task>(`${API_CONFIG.ENDPOINTS.TASKS}/${id}`, data),
-    delete: (id: string) => apiClient.delete(`${API_CONFIG.ENDPOINTS.TASKS}/${id}`),
-  },
-
-  // Auth endpoints
-  auth: {
-    getCurrentUser: () => apiClient.get<Employee[]>(`${API_CONFIG.ENDPOINTS.EMPLOYEES}?limit=1`),
-  },
+  tasks: taskAPI,
+  employees: employeeAPI,
+  auth: authAPI,
 }; 

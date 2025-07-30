@@ -1,144 +1,94 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster, toast } from 'sonner';
-import { Button } from './components/ui/button';
-import { Avatar, AvatarFallback } from './components/ui/avatar';
-import { Badge } from './components/ui/badge';
-import { TaskBoard } from './features/kanban';
-import { TaskModal, CreateTaskModal } from './features/tasks';
-import { EmployeeFormDialog } from './features/employees';
-import { useEmployees, useCreateEmployee } from './features/employees';
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from './features/tasks';
+import { ThemeProvider } from './lib/theme';
+import { ThemeToggle } from './components/ThemeToggle';
 import { RoleSwitcher } from './components/RoleSwitcher';
-import { AuditLog } from './components/AuditLog';
+import { TaskBoard } from './features/kanban/TaskBoard';
+import { TaskModal } from './features/tasks/components/TaskModal';
+import { CreateTaskModal } from './features/tasks/components/CreateTaskModal';
 import { EmployeeManagement } from './pages/EmployeeManagement';
+import { AuditLog } from './components/AuditLog';
+import { EmptyState } from './components/EmptyState';
 import { ZiraLogo } from './components/ZiraLogo';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { createDemoUser, getRolePermissions } from './lib/roleManager';
-import { auditLogService, auditLogHelpers } from './lib/auditLog';
-import type { Task, TaskStatus, UpdateTaskData, CreateTaskData } from './features/tasks';
-import type { CreateEmployeeData, Role } from './features/employees';
+import { useTasks, useUpdateTask, useCreateTask, useDeleteTask } from './features/tasks';
+import { useEmployees } from './features/employees';
+import { getRolePermissions } from './lib/roleManager';
+import { auditLogHelpers } from './lib/auditLog';
+import type { Task, TaskStatus } from './features/tasks/types';
+import type { Role, Employee } from './features/employees/types';
 
+// Create React Query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    },
-    mutations: {
       retry: 1,
     },
   },
 });
 
-interface DashboardProps {
-  currentRole: Role;
-  onRoleChange: (role: Role) => void;
-}
-
-function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+/**
+ * Main App component - ZIRA task management system
+ * Handles routing, theme, role management, and task operations
+ */
+function App() {
+  // User state
+  const [currentRole, setCurrentRole] = useState<Role>('admin');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const currentUser = createDemoUser(currentRole);
+  // Get permissions for current role
   const permissions = getRolePermissions(currentRole);
 
-  const { data: employees = [], isLoading: employeesLoading, error: employeesError } = useEmployees();
-  const { data: allTasks = [], isLoading: tasksLoading, error: tasksError } = useTasks();
+  // Data fetching
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks();
+  const { data: employees = [], isLoading: employeesLoading } = useEmployees();
 
-  const createTaskMutation = useCreateTask();
+  // Task mutations
   const updateTaskMutation = useUpdateTask();
+  const createTaskMutation = useCreateTask();
   const deleteTaskMutation = useDeleteTask();
-  const createEmployeeMutation = useCreateEmployee();
 
-  // Debug logging for API data
-  useEffect(() => {
-    console.log('=== Dashboard Debug Information ===');
-    console.log('Current role:', currentRole);
-    console.log('Current user:', currentUser);
-    console.log('Permissions:', permissions);
-    console.log('All tasks from API:', allTasks);
-    console.log('Employees from API:', employees);
-    
-    // Check for tasks that might be filtered out
-    if (allTasks.length > 0) {
-      const tasksWithIssues = allTasks.filter(task => {
-        const hasInvalidStatus = !['pending', 'in-progress', 'in-review', 'done'].includes(task.status);
-        const hasNoAssignee = !task.assigneeId;
-        const hasInvalidAssignee = task.assigneeId && !employees.find(emp => emp.id === task.assigneeId);
-        
-        return hasInvalidStatus || hasNoAssignee || hasInvalidAssignee;
-      });
-      
-      if (tasksWithIssues.length > 0) {
-        console.log('Tasks with potential issues:', tasksWithIssues);
-      }
-    }
-    
-    console.log('=== End Dashboard Debug ===');
-  }, [currentRole, currentUser.id, permissions, allTasks.length, employees.length]);
+  // Get current user (demo user based on role)
+  const currentUser = (employees as Employee[]).find(emp => emp.role === currentRole) || (employees as Employee[])[0];
 
-  // Filter tasks based on user role
-  const tasks = permissions.canViewAllTasks 
-    ? allTasks 
-    : allTasks.filter(task => task.assigneeId === currentUser.id);
-
-  // Debug logging for filtered tasks
-  useEffect(() => {
-    console.log('=== Task Filtering Debug ===');
-    console.log('All tasks count:', allTasks.length);
-    console.log('Filtered tasks count:', tasks.length);
-    console.log('Can view all tasks:', permissions.canViewAllTasks);
-    console.log('Current user ID:', currentUser.id);
-    
-    if (!permissions.canViewAllTasks) {
-      const userTasks = allTasks.filter(task => task.assigneeId === currentUser.id);
-      console.log('Tasks assigned to current user:', userTasks);
-    }
-    
-    console.log('=== End Task Filtering Debug ===');
-  }, [allTasks.length, tasks.length, permissions.canViewAllTasks, currentUser.id]);
-
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setIsTaskModalOpen(true);
+  // Handle role change
+  const handleRoleChange = (newRole: Role) => {
+    setCurrentRole(newRole);
+    auditLogHelpers.roleChanged(currentRole, newRole);
   };
 
+  // Handle task click
+  const handleTaskClick = (task: Task) => {
+    if (permissions.canViewTask(task)) {
+      setSelectedTask(task);
+    }
+  };
+
+  // Handle task status change
   const handleTaskStatusChange = (taskId: string, newStatus: TaskStatus) => {
-    const task = allTasks.find(t => t.id === taskId);
-    if (!task) {
-      console.error('Task not found for status change:', taskId);
-      toast.error('Task not found');
+    const task = (tasks as Task[]).find(t => t.id === taskId);
+    if (!task) return;
+
+    // Permission checks
+    if (!permissions.canChangeStatus) {
+      toast.error('You do not have permission to change task status');
       return;
     }
 
-    // Prevent unnecessary updates
-    if (task.status === newStatus) {
-      console.log('Task status unchanged:', taskId, newStatus);
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser?.id) {
+      toast.error('You can only update your own tasks');
       return;
     }
 
-    const previousStatus = task.status;
-    
     updateTaskMutation.mutate(
-      { 
-        id: taskId, 
-        data: { 
-          status: newStatus,
-          updatedAt: new Date().toISOString()
-        } 
-      },
+      { id: taskId, data: { status: newStatus } },
       {
         onSuccess: () => {
-          auditLogHelpers.taskMoved(taskId, task.title, previousStatus, newStatus, currentRole);
-          toast.success(`Task moved to ${newStatus.replace('-', ' ')}`);
+          auditLogHelpers.taskStatusChanged(taskId, task.title, task.status, newStatus, currentRole);
+          toast.success('Task status updated successfully');
         },
         onError: (error) => {
           toast.error('Failed to update task status');
@@ -148,59 +98,79 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     );
   };
 
-  const handleTaskSave = (taskId: string, data: UpdateTaskData) => {
-    const task = allTasks.find(t => t.id === taskId);
+  // Handle task deletion
+  const handleTaskDelete = (taskId: string) => {
+    const task = (tasks as Task[]).find(t => t.id === taskId);
     if (!task) return;
 
-    // Only include fields that have actually changed
-    const changedFields: UpdateTaskData = {};
-    
-    if (data.title !== undefined && data.title !== task.title) {
-      changedFields.title = data.title;
-    }
-    
-    if (data.description !== undefined && data.description !== task.description) {
-      changedFields.description = data.description;
-    }
-    
-    if (data.assigneeId !== undefined && data.assigneeId !== task.assigneeId) {
-      changedFields.assigneeId = data.assigneeId;
-    }
-    
-    if (data.status !== undefined && data.status !== task.status) {
-      changedFields.status = data.status;
+    // Permission checks
+    if (!permissions.canDeleteTask) {
+      toast.error('You do not have permission to delete tasks');
+      return;
     }
 
-    // Always include updatedAt timestamp for any change
-    changedFields.updatedAt = new Date().toISOString();
-
-    // Log assignee changes
-    if (changedFields.assigneeId) {
-      const previousAssignee = employees.find(emp => emp.id === task.assigneeId)?.name || 'Unassigned';
-      const newAssignee = employees.find(emp => emp.id === changedFields.assigneeId!)?.name || 'Unassigned';
-      auditLogHelpers.taskAssigneeUpdated(taskId, task.title, previousAssignee, newAssignee, currentRole);
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser?.id) {
+      toast.error('You can only delete your own tasks');
+      return;
     }
 
-    // Always update if there are any changes (including just updatedAt)
-    if (Object.keys(changedFields).length === 0) {
-      toast.info('No changes detected');
-      setIsTaskModalOpen(false);
+    deleteTaskMutation.mutate(taskId, {
+      onSuccess: () => {
+        auditLogHelpers.taskDeleted(taskId, task.title, currentRole);
+        toast.success('Task deleted successfully');
+        setSelectedTask(null);
+      },
+      onError: (error) => {
+        toast.error('Failed to delete task');
+        console.error('Task deletion error:', error);
+      },
+    });
+  };
+
+  // Handle task creation
+  const handleTaskCreate = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    // Permission check
+    if (!permissions.canCreateTask) {
+      toast.error('You do not have permission to create tasks');
+      return;
+    }
+
+    createTaskMutation.mutate(taskData, {
+      onSuccess: (newTask) => {
+        auditLogHelpers.taskCreated((newTask as Task).id, (newTask as Task).title, currentRole);
+        toast.success('Task created successfully');
+        setIsCreateModalOpen(false);
+      },
+      onError: (error) => {
+        toast.error('Failed to create task');
+        console.error('Task creation error:', error);
+      },
+    });
+  };
+
+  // Handle task updates
+  const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
+    const task = (tasks as Task[]).find(t => t.id === taskId);
+    if (!task) return;
+
+    // Permission checks
+    if (!permissions.canEditTask) {
+      toast.error('You do not have permission to edit tasks');
+      return;
+    }
+
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser?.id) {
+      toast.error('You can only edit your own tasks');
       return;
     }
 
     updateTaskMutation.mutate(
-      { id: taskId, data: changedFields },
+      { id: taskId, data: updates },
       {
         onSuccess: () => {
           auditLogHelpers.taskUpdated(taskId, task.title, currentRole, 'Task details updated');
           toast.success('Task updated successfully');
-          
-          // Optimistically update the cache with the new task data
-          queryClient.setQueryData(['tasks'], (oldTasks: Task[] = []) => {
-            return oldTasks.map(t => t.id === taskId ? { ...t, ...changedFields } : t);
-          });
-          
-          setIsTaskModalOpen(false);
+          setSelectedTask(null);
         },
         onError: (error) => {
           toast.error('Failed to update task');
@@ -210,274 +180,218 @@ function Dashboard({ currentRole, onRoleChange }: DashboardProps) {
     );
   };
 
-  const handleTaskDelete = (taskId: string) => {
-    const task = allTasks.find(t => t.id === taskId);
+  /**
+   * Handles task color changes from individual task cards
+   * @param taskId - ID of the task to update
+   * @param color - New color value or null to reset to default
+   */
+  const handleTaskColorChange = (taskId: string, color: string | null) => {
+    const task = (tasks as Task[]).find(t => t.id === taskId);
     if (!task) return;
 
-    deleteTaskMutation.mutate(taskId, {
-      onSuccess: () => {
-        auditLogHelpers.taskDeleted(taskId, task.title, currentRole);
-        toast.success('Task deleted successfully');
-        setIsTaskModalOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to delete task');
-        console.error('Task delete error:', error);
-      },
-    });
-  };
+    // Permission checks for task color updates
+    if (!permissions.canEditTask) {
+      toast.error('You do not have permission to update tasks');
+      return;
+    }
 
-  const handleCreateTask = (data: CreateTaskData) => {
-    createTaskMutation.mutate(data, {
-      onSuccess: (newTask) => {
-        auditLogHelpers.taskCreated(newTask.id, newTask.title, currentRole);
-        toast.success('Task created successfully');
-        setIsCreateTaskModalOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to create task');
-        console.error('Task creation error:', error);
-      },
-    });
-  };
+    if (!permissions.canViewAllTasks && task.assigneeId !== currentUser.id) {
+      toast.error('You can only update your own tasks');
+      return;
+    }
 
-  const handleCreateEmployee = (data: CreateEmployeeData) => {
-    createEmployeeMutation.mutate(data, {
-      onSuccess: (newEmployee) => {
-        auditLogHelpers.employeeCreated(newEmployee.id, newEmployee.name, currentRole);
-        toast.success('Employee added successfully');
-        setIsEmployeeModalOpen(false);
-      },
-      onError: (error) => {
-        toast.error('Failed to add employee');
-        console.error('Employee creation error:', error);
-      },
-    });
-  };
-
-  const handleRoleChange = (newRole: Role) => {
-    onRoleChange(newRole);
-    toast.success(`Switched to ${newRole} role`);
-  };
-
-  // Show loading state
-  if (employeesLoading || tasksLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <ZiraLogo size={48} />
-          </div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading ZIRA...</p>
-        </div>
-      </div>
+    updateTaskMutation.mutate(
+      { id: taskId, data: { customColor: color || undefined } },
+      {
+        onSuccess: () => {
+          // Log the color change for audit purposes
+          auditLogHelpers.taskUpdated(taskId, task.title, currentRole, `Task color ${color ? 'changed' : 'reset'}`);
+          toast.success(color ? 'Task color updated successfully' : 'Task color reset to default');
+        },
+        onError: (error) => {
+          toast.error('Failed to update task color');
+          console.error('Task color update error:', error);
+        },
+      }
     );
-  }
+  };
 
-  // Show error state
-  if (employeesError || tasksError) {
+  // Loading state
+  if (tasksLoading || employeesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="flex justify-center mb-6">
-            <ZiraLogo size={48} />
-          </div>
-          
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Connection Error
-          </h1>
-          
-          <p className="text-gray-600 mb-6">
-            Unable to load data from the server. Please check your connection and try again.
-          </p>
-          
-          <div className="space-y-3">
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="w-full"
-            >
-              Retry
-            </Button>
-          </div>
-          
-          {(employeesError || tasksError) && (
-            <details className="mt-6 text-left">
-              <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                Error Details
-              </summary>
-              <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono text-red-600">
-                {employeesError && (
-                  <div className="mb-2">
-                    <strong>Employees Error:</strong> {employeesError.message}
-                  </div>
-                )}
-                {tasksError && (
-                  <div>
-                    <strong>Tasks Error:</strong> {tasksError.message}
-                  </div>
-                )}
-              </div>
-            </details>
-          )}
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#121212]">
+        <div className="text-center">
+          <ZiraLogo size={64} variant="sky" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mt-4"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading ZIRA...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <ZiraLogo size={32} variant="sky" showText={false} />
-              <span className="text-xl font-bold text-gray-900">ZIRA</span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <RoleSwitcher currentRole={currentRole} onRoleChange={handleRoleChange} />
-              {permissions.canCreateEmployee && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigate('/employees')}
-                >
-                  Manage Employees
-                </Button>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowAuditLog(!showAuditLog)}
-              >
-                {showAuditLog ? 'Hide' : 'Show'} Audit Log
-              </Button>
-              <div className="flex items-center space-x-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback>
-                    {currentUser.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-sm">
-                  <p className="font-medium text-gray-900">{currentUser.name}</p>
-                  <Badge variant="secondary" className="text-xs">
-                    {currentUser.role}
-                  </Badge>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50 dark:bg-[#121212]">
+            {/* Header */}
+            <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                  {/* Logo and title */}
+                  <div className="flex items-center gap-3">
+                    <ZiraLogo size={32} variant="sky" showText={false} />
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">ZIRA</h1>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex items-center gap-4">
+                    <ThemeToggle />
+                    <RoleSwitcher currentRole={currentRole} onRoleChange={handleRoleChange} />
+                    {permissions.canCreateEmployee && (
+                      <button
+                        className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => window.location.href = '/employees'}
+                      >
+                        Manage Employees
+                      </button>
+                    )}
+                    {permissions.canViewAuditLog && (
+                      <button
+                        className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => window.location.href = '/audit-log'}
+                      >
+                        Audit Log
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </header>
+            </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Action Buttons */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">ZIRA Kanban Board</h2>
-            <p className="text-gray-600">
-              {permissions.canViewAllTasks 
-                ? currentRole === 'employee' 
-                  ? 'View all tasks and collaborate on the board'
-                  : 'Manage all tasks and team members'
-                : 'Your assigned tasks'
-            }
-            </p>
-          </div>
-          
-          <div className="flex space-x-3">
-            {permissions.canCreateTask && (
-              <Button onClick={() => setIsCreateTaskModalOpen(true)}>
-                Create Task
-              </Button>
+            {/* Main content */}
+            <main className="flex-1">
+              <Routes>
+                {/* Dashboard route */}
+                <Route
+                  path="/"
+                  element={
+                    <div className="p-6">
+                      {/* Dashboard header */}
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          ZIRA Task Board
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">
+                          Welcome back, {currentUser?.name || 'User'}! Manage your tasks efficiently.
+                        </p>
+                      </div>
+
+                      {/* Task board */}
+                      {(tasks as Task[]).length === 0 ? (
+                        <EmptyState
+                          title="No tasks yet"
+                          description="Get started by creating your first task"
+                          action={{
+                            label: "Create Task",
+                            onClick: () => setIsCreateModalOpen(true)
+                          }}
+                        />
+                      ) : (
+                        <TaskBoard
+                          tasks={tasks as Task[]}
+                          employees={employees as Employee[]}
+                          onTaskClick={handleTaskClick}
+                          onTaskStatusChange={handleTaskStatusChange}
+                          onTaskColorChange={handleTaskColorChange}
+                          canEditColors={permissions.canEditTask}
+                          isAdmin={currentRole === 'admin'}
+                        />
+                      )}
+
+                      {/* Create task button */}
+                      {permissions.canCreateTask && (
+                        <div className="fixed bottom-6 right-6">
+                          <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center"
+                          >
+                            <span className="text-2xl">+</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  }
+                />
+
+                {/* Employee management route */}
+                <Route
+                  path="/employees"
+                  element={
+                    permissions.canCreateEmployee ? (
+                      <EmployeeManagement currentRole={currentRole} />
+                    ) : (
+                      <div>Access Denied</div>
+                    )
+                  }
+                />
+
+                {/* Audit log route */}
+                <Route
+                  path="/audit-log"
+                  element={
+                    permissions.canViewAuditLog ? (
+                      <div className="p-6">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            ZIRA Audit Log
+                          </h2>
+                          <p className="text-gray-600 dark:text-gray-400 mt-1">
+                            Track all system activities and changes
+                          </p>
+                        </div>
+                        <AuditLog logs={[]} />
+                      </div>
+                    ) : (
+                      <div>Access Denied</div>
+                    )
+                  }
+                />
+
+                {/* Default redirect */}
+                <Route path="*" element={<div>Page Not Found</div>} />
+              </Routes>
+            </main>
+
+            {/* Task modals */}
+            {selectedTask && (
+              <TaskModal
+                task={selectedTask}
+                employees={employees as Employee[]}
+                currentUserRole={currentRole}
+                isOpen={true}
+                onClose={() => setSelectedTask(null)}
+                onSave={handleTaskUpdate}
+                onDelete={handleTaskDelete}
+              />
             )}
-            {permissions.canCreateEmployee && (
-              <Button variant="outline" onClick={() => setIsEmployeeModalOpen(true)}>
-                Add Employee
-              </Button>
+
+            {/* Create task modal */}
+            {isCreateModalOpen && (
+              <CreateTaskModal
+                isOpen={isCreateModalOpen}
+                employees={employees as Employee[]}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSubmit={handleTaskCreate}
+                currentRole={currentRole}
+              />
             )}
           </div>
-        </div>
-
-        {/* Audit Log */}
-        {showAuditLog && (
-          <div className="mb-6">
-            <AuditLog 
-              logs={auditLogService.getLogs()} 
-            />
-          </div>
-        )}
-
-        {/* Kanban Board */}
-        <div 
-          className="h-[calc(100vh-200px)] 
-                     overflow-x-hidden 
-                     overflow-y-auto"
-        >
-          <TaskBoard
-            tasks={tasks}
-            employees={employees}
-            onTaskClick={handleTaskClick}
-            onTaskStatusChange={handleTaskStatusChange}
-          />
-        </div>
-      </main>
-
-      {/* Modals */}
-      <TaskModal
-        task={selectedTask}
-        employees={employees}
-        currentUserRole={currentUser.role}
-        isOpen={isTaskModalOpen}
-        onClose={() => setIsTaskModalOpen(false)}
-        onSave={handleTaskSave}
-        onDelete={handleTaskDelete}
-      />
-
-      <EmployeeFormDialog
-        isOpen={isEmployeeModalOpen}
-        onClose={() => setIsEmployeeModalOpen(false)}
-        onSubmit={handleCreateEmployee}
-        isLoading={createEmployeeMutation.isPending}
-      />
-
-      {/* Create Task Modal */}
-      <CreateTaskModal
-        isOpen={isCreateTaskModalOpen}
-        onClose={() => setIsCreateTaskModalOpen(false)}
-        onSubmit={handleCreateTask}
-        employees={employees}
-        isLoading={createTaskMutation.isPending}
-      />
-
-      <Toaster />
-    </div>
-  );
-}
-
-function AppContent() {
-  const [currentRole, setCurrentRole] = useState<Role>('admin');
-
-  return (
-    <Routes>
-      <Route path="/" element={<Dashboard currentRole={currentRole} onRoleChange={setCurrentRole} />} />
-      <Route path="/employees" element={<EmployeeManagement currentRole={currentRole} />} />
-    </Routes>
-  );
-}
-
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <AppContent />
         </Router>
         <Toaster position="top-right" />
-      </QueryClientProvider>
-    </ErrorBoundary>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
+
+export default App;

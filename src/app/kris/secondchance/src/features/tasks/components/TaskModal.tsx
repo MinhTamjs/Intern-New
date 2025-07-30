@@ -131,33 +131,33 @@ export function TaskModal({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
       case 'in-progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200';
       case 'in-review':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200';
       case 'done':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose} key={task?.id || 'no-task'}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+        <DialogHeader className="relative">
+          <DialogTitle className="flex items-center justify-between pr-12">
             <div className="flex items-center space-x-2">
               <span>{isEditing ? 'Edit Task' : 'Task Details'}</span>
               {isEmployee && (
-                <Badge variant="outline" className="text-xs text-gray-500">
+                <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400">
                   Read Only
                 </Badge>
               )}
             </div>
             {task && (
-              <Badge className={getStatusColor(task.status)}>
+              <Badge className={`${getStatusColor(task.status)} mr-4`}>
                 {task.status.replace('-', ' ')}
               </Badge>
             )}
@@ -228,17 +228,17 @@ export function TaskModal({
             ) : (
               <div className="space-y-4">
                 <div className="text-left">
-                  <Label className="text-sm font-medium text-gray-500 text-left">Title</Label>
+                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Title</Label>
                   <p className="text-lg font-medium text-left mt-1">{task.title}</p>
                 </div>
 
                 <div className="text-left">
-                  <Label className="text-sm font-medium text-gray-500 text-left">Description</Label>
-                  <p className="text-gray-700 whitespace-pre-wrap text-left mt-1">{task.description}</p>
+                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Description</Label>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-left mt-1">{task.description}</p>
                 </div>
 
                 <div className="text-left">
-                  <Label className="text-sm font-medium text-gray-500 text-left">Assignee</Label>
+                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Assignee</Label>
                   <div className="flex items-center space-x-2 mt-1">
                     {assignee ? (
                       <Avatar className="w-8 h-8">
@@ -247,29 +247,29 @@ export function TaskModal({
                         </AvatarFallback>
                       </Avatar>
                     ) : (
-                      <div className="w-8 h-8 border border-gray-200 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-xs text-gray-500 font-medium">U</span>
+                      <div className="w-8 h-8 border border-gray-200 dark:border-gray-600 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">U</span>
                       </div>
                     )}
                     <div className="text-left">
                       <p className="font-medium text-left">{assignee?.name || 'Unassigned'}</p>
-                      <p className="text-sm text-gray-500 text-left">{assignee?.email || 'No email'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-left">{assignee?.email || 'No email'}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-left">
-                  <Label className="text-sm font-medium text-gray-500 text-left">Created</Label>
-                  <p className="text-gray-700 text-left mt-1">
-                    {task.createdAt ? formatDate(task.createdAt, "Not set") : 
+                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Created</Label>
+                  <p className="text-gray-700 dark:text-gray-300 text-left mt-1">
+                    {task.createdAt ? formatDate(task.createdAt) : 
                      task.dueData ? formatUnixTimestamp(task.dueData, "Not set") : "Not set"}
                   </p>
                 </div>
 
                 <div className="text-left">
-                  <Label className="text-sm font-medium text-gray-500 text-left">Last Updated</Label>
-                  <p className="text-gray-700 text-left mt-1">
-                    {task.updatedAt ? formatDate(task.updatedAt, "Not set") : 
+                  <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Last Updated</Label>
+                  <p className="text-gray-700 dark:text-gray-300 text-left mt-1">
+                    {task.updatedAt ? formatDate(task.updatedAt) : 
                      task.dueData ? formatUnixTimestamp(task.dueData, "Not set") : "Not set"}
                   </p>
                 </div>
