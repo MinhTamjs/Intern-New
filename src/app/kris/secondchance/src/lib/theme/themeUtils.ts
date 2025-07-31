@@ -144,11 +144,11 @@ export interface StatusColors {
 export const DEFAULT_STATUS_COLORS: Record<string, StatusColors> = {
   pending: {
     light: {
-      background: '#fdf2f8', // Light pink background
-      border: '#fbcfe8', // Pink border
+      background: '#fff1f2', // rose-100 background (less saturated)
+      border: '#fda4af', // rose-300 border (less saturated)
       text: '#be185d', // Dark pink text
       badge: '#fce7f3', // Light pink badge
-      headerBg: '#fdf2f8' // Light pink header
+      headerBg: '#fff1f2' // rose-100 header (less saturated)
     },
     dark: {
       background: '#882e63', // Dark rose background

@@ -248,28 +248,26 @@ export function TaskModal({
                 <div className="text-left">
                   <Label className="text-sm font-medium text-gray-500 dark:text-gray-400 text-left">Assignees</Label>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
-                                         {assignees.length > 0 ? (
-                       assignees.map((assignee) => assignee && (
-                         <div key={assignee.id} className="flex items-center space-x-2">
-                           <Avatar className="w-8 h-8">
-                             <AvatarFallback>
-                               {assignee.name.split(' ').map(n => n[0]).join('')}
-                             </AvatarFallback>
-                           </Avatar>
-                           <div className="text-left">
-                             <p className="font-medium text-left">{assignee.name}</p>
-                             <p className="text-sm text-gray-500 dark:text-gray-400 text-left">{assignee.email}</p>
-                           </div>
-                         </div>
-                       ))
-                     ) : (
+                    {assignees.length > 0 ? (
+                      assignees.map((assignee) => assignee && (
+                        <div key={assignee.id} className="flex items-center space-x-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback>
+                              {assignee.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="text-left">
+                            <p className="font-medium text-left">{assignee.name}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
                       <div className="flex items-center space-x-2">
                         <div className="w-8 h-8 border border-gray-200 dark:border-gray-600 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">U</span>
                         </div>
                         <div className="text-left">
                           <p className="font-medium text-left">Unassigned</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 text-left">No assignees</p>
                         </div>
                       </div>
                     )}

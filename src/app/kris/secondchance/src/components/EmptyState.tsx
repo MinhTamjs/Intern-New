@@ -19,7 +19,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
     <div className="text-center py-12">
       {/* Logo */}
-      <ZiraLogo size={64} variant="sky" className="mx-auto mb-4" />
+      <ZiraLogo size={64} className="mx-auto mb-4" />
       
       {/* Title */}
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">

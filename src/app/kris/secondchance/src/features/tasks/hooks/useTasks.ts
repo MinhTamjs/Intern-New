@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../lib/api';
+import { api } from '../../../lib/api/api';
 import { generateTimestamp } from '../../../lib/utils';
 import type { Task, CreateTaskData, UpdateTaskData } from '../types';
 

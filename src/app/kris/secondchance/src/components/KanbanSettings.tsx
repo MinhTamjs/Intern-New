@@ -5,11 +5,11 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { ColorPicker } from './ColorPicker';
 import {
-  DEFAULT_STATUS_COLORS,
   getStatusInfo,
+  DEFAULT_STATUS_COLORS,
   isAccessibleContrast,
   type StatusColors
-} from '../lib/themeUtils';
+} from '../lib/theme/themeUtils';
 import { Settings, Palette, Eye, EyeOff } from 'lucide-react';
 
 // Kanban settings props

@@ -1,4 +1,4 @@
-import type { Role } from '../features/employees/types';
+import type { Role } from '../../features/employees/types';
 
 // Permission interface
 interface Permissions {

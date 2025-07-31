@@ -1,16 +1,14 @@
-import type { Task, TaskStatus } from '../features/tasks/types';
-import { auditLogService } from './auditLog';
-import type { Role } from '../features/employees/types';
+import type { Task, TaskStatus } from '../../features/tasks/types';
+import { auditLogHelpers } from '../audit/auditLog';
 
 /**
  * Updates a task's status and persists the change to localStorage
  * Also creates an audit log entry for the status change
  * @param taskId - ID of the task to update
  * @param newStatus - New status for the task
- * @param userRole - Role of the user performing the action
  * @returns Updated task or null if task not found
  */
-export function updateTaskStatus(taskId: string, newStatus: TaskStatus, userRole: Role): Task | null {
+export function updateTaskStatus(taskId: string, newStatus: TaskStatus): Task | null {
   try {
     // Get current tasks from localStorage
     const tasksJson = localStorage.getItem('tasks');
@@ -44,16 +42,7 @@ export function updateTaskStatus(taskId: string, newStatus: TaskStatus, userRole
     localStorage.setItem('tasks', JSON.stringify(tasks));
 
     // Create audit log entry for the status change
-    auditLogService.addLog({
-      actionType: 'TASK_STATUS_CHANGED',
-      entityType: 'task',
-      entityId: taskId,
-      entityName: task.title,
-      userRole: userRole,
-      details: `Task status restored from "${newStatus}" to "${previousStatus}" via audit log`,
-      previousValue: newStatus,
-      newValue: previousStatus,
-    });
+    auditLogHelpers.taskStatusChanged(task.title, previousStatus, newStatus);
 
     console.log(`Task ${taskId} status updated from ${previousStatus} to ${newStatus}`);
     return updatedTask;
@@ -90,8 +79,6 @@ export function getTaskById(taskId: string): Task | null {
  * @returns True if the log entry can be restored
  */
 export function canRestoreStatusChange(log: any): boolean {
-  return log.actionType === 'TASK_STATUS_CHANGED' && 
-         log.previousValue && 
-         log.newValue &&
+  return log.action === 'Task status changed' && 
          log.entityType === 'task';
 } 

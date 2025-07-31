@@ -3,7 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../../components/ui/dialog';
 import { ColorPicker } from '../../../components/ColorPicker';
 
-import { getContrastTextColor, isValidHexColor, normalizeHexColor } from '../../../lib/themeUtils';
+import { getContrastTextColor, isValidHexColor, normalizeHexColor } from '../../../lib/theme/themeUtils';
 import type { Task } from '../types';
 
 interface TaskColorEditorProps {
