@@ -1,3 +1,5 @@
+import { ConditionalLogo } from './ConditionalLogo';
+
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   text?: string;
@@ -25,19 +27,7 @@ export const LoadingSpinner = ({
     <div className="flex flex-col items-center justify-center p-8">
       {showLogo && (
         <div className="mb-4">
-          <img
-            src="/lightmode.png"
-            alt="Zira Logo"
-            style={{
-              height: 240,
-              width: 'auto',
-              display: 'inline-block',
-              userSelect: 'none',
-              backgroundColor: 'transparent',
-              mixBlendMode: 'normal',
-              maxWidth: '60vw',
-            }}
-          />
+          <ConditionalLogo size={240} />
         </div>
       )}
       <div className={`animate-spin rounded-full border-b-2 border-sky-600 ${sizeClasses[size]}`} />

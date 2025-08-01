@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 import type { Task, TaskStatus } from '../features/tasks/types';
 import type { Employee } from '../features/employees/types';
+import type { Permissions } from '../lib/roles/roleManager';
 
 interface AppContextType {
   // State
@@ -9,7 +10,7 @@ interface AppContextType {
   openTaskModalInEditMode: boolean;
   migratedTasks: Task[];
   currentUser: Employee | undefined;
-  permissions: any; // Using any for now to avoid circular dependency
+  permissions: Permissions;
   
   // Loading states
   isLoading: boolean;

@@ -14,6 +14,7 @@ interface CreateTaskModalProps {
   onClose: () => void; // Callback when modal is closed
   onSubmit: (data: CreateTaskData) => void; // Callback when task is submitted
   employees: Employee[]; // List of available employees for assignment
+  currentUserRole: 'admin' | 'manager' | 'employee'; // Current user's role
   isLoading?: boolean; // Loading state for form submission
 }
 
@@ -26,6 +27,7 @@ export function CreateTaskModal({
   onClose, 
   onSubmit, 
   employees, 
+  currentUserRole,
   isLoading = false
 }: CreateTaskModalProps) {
   return (
@@ -38,6 +40,7 @@ export function CreateTaskModal({
         {/* Task form with all necessary props */}
         <TaskForm
           employees={employees}
+          currentUserRole={currentUserRole}
           onSubmit={onSubmit}
           onCancel={onClose}
           isLoading={isLoading}

@@ -1,3 +1,14 @@
+/**
+ * Main Application Styles
+ * 
+ * Global styles and configuration for the ZIRA task management application.
+ * Includes font imports, Tailwind CSS configuration, and custom utilities.
+ */
+
+/* Google Fonts - Solway font family for consistent typography */
+@import url('https://fonts.googleapis.com/css2?family=Solway:wght@300;400;500;700;800&display=swap');
+
+/* Tailwind CSS framework */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -186,5 +197,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Solway', serif;
+    font-size: 5rem; /* 28px - equivalent to Tailwind's text-7xl */
   }
 }

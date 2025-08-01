@@ -1,3 +1,5 @@
+import { ConditionalLogo } from './ConditionalLogo';
+
 interface ZiraLogoProps {
   size?: number; // Height in px (default: 120)
   className?: string;
@@ -15,19 +17,7 @@ export function ZiraLogo({ size = 120, className = '' }: ZiraLogoProps) {
         width: '100%',
       }}
     >
-      <img
-        src="/lightmode.png"
-        alt="Zira Logo"
-        style={{
-          height: size,
-          width: 'auto',
-          display: 'inline-block',
-          userSelect: 'none',
-          backgroundColor: 'transparent',
-          mixBlendMode: 'normal',
-          maxWidth: '60vw',
-        }}
-      />
+      <ConditionalLogo size={size} />
     </div>
   );
 } 

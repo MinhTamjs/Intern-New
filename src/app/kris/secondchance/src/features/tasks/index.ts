@@ -1,5 +1,4 @@
 // Export task components for external use
-export { TaskModal } from './components/TaskModal';
 export { CreateTaskModal } from './components/CreateTaskModal';
 export { TaskForm } from './components/TaskForm';
 

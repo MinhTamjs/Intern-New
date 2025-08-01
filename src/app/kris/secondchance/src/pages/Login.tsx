@@ -98,10 +98,10 @@ export const Login = () => {
           <div className="flex justify-center mb-4">
             <ZiraLogo size={64} />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome to ZIRA
           </CardTitle>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             Sign in to your account
           </p>
         </CardHeader>
@@ -109,7 +109,7 @@ export const Login = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-base font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -117,12 +117,12 @@ export const Login = () => {
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 required
-                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white text-base"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-base font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -130,13 +130,13 @@ export const Login = () => {
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 required
-                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white text-base"
               />
             </div>
             
             <Button
               type="submit"
-              className="w-full"
+              className="w-full text-base font-medium"
               disabled={isLoading}
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
@@ -145,10 +145,10 @@ export const Login = () => {
           
           {/* Demo credentials */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+            <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
               Demo Credentials:
             </h4>
-            <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
               <div><strong>Admin:</strong> admin@zira.com / admin123</div>
               <div><strong>Manager:</strong> manager@zira.com / manager123</div>
               <div><strong>Employee:</strong> user@zira.com / user123</div>

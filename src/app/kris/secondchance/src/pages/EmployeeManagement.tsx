@@ -11,8 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ZiraLogo } from '../components/ZiraLogo';
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../features/employees';
-import { useAuth } from '../contexts/AuthContext';
+import { useTasks } from '../features/tasks/hooks/useTasks';
+import { useAuth } from '../hooks/useAuth';
 import type { Role, Employee } from '../features/employees/types';
+import type { Task } from '../features/tasks/types';
+import { Clock, AlertTriangle, Calendar, FileText } from 'lucide-react';
 
 /**
  * EmployeeManagement page - handles employee CRUD operations
@@ -33,6 +36,8 @@ export function EmployeeManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [isTasksModalOpen, setIsTasksModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,9 +46,22 @@ export function EmployeeManagement() {
 
   // Data fetching hooks
   const { data: employees = [], isLoading, error } = useEmployees();
+  const { data: tasks = [] } = useTasks();
   const createEmployeeMutation = useCreateEmployee();
   const updateEmployeeMutation = useUpdateEmployee();
   const deleteEmployeeMutation = useDeleteEmployee();
+
+  // Get tasks assigned to a specific employee
+  const getAssignedTasks = (employeeId: string): Task[] => {
+    return tasks.filter(task => 
+      task.assigneeIds && task.assigneeIds.includes(employeeId)
+    );
+  };
+
+  // Get task count for an employee
+  const getTaskCount = (employeeId: string): number => {
+    return getAssignedTasks(employeeId).length;
+  };
 
   // Check if user has permission to manage employees
   const canManageEmployees = currentRole === 'admin' || currentRole === 'manager';
@@ -183,12 +201,17 @@ export function EmployeeManagement() {
     setIsEditModalOpen(true);
   };
 
+  const handleViewTasks = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsTasksModalOpen(true);
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Employee Management</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Employee Management</h1>
+        <p className="text-xl font-bold text-gray-900 dark:text-white mt-2">
           Manage your team members and their roles
         </p>
       </div>
@@ -202,13 +225,13 @@ export function EmployeeManagement() {
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+              className="w-full sm:w-64 bg-white dark:bg-gray-800 border-[#5ce7ff] dark:border-gray-600 text-gray-900 dark:text-white"
             />
           </div>
 
           {/* Role filter */}
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full sm:w-40 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white">
+                          <SelectTrigger className="w-full sm:w-40 bg-white dark:bg-gray-800 border-[#5ce7ff] dark:border-gray-600 text-gray-900 dark:text-white">
               <SelectValue placeholder="Filter by role" />
             </SelectTrigger>
             <SelectContent>
@@ -229,7 +252,7 @@ export function EmployeeManagement() {
       {/* Employee table */}
       <Card>
         <CardHeader>
-          <CardTitle>Employees ({filteredEmployees.length})</CardTitle>
+          <CardTitle className="text-2xl font-bold">Employees ({filteredEmployees.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -238,6 +261,7 @@ export function EmployeeManagement() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Tasks</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -250,6 +274,23 @@ export function EmployeeManagement() {
                     <Badge className={getRoleColor(employee.role)}>
                       {employee.role}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {getTaskCount(employee.id)} Tasks
+                      </Badge>
+                      {getTaskCount(employee.id) > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewTasks(employee)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          View
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -294,7 +335,7 @@ export function EmployeeManagement() {
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 required
-                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="bg-white dark:bg-gray-800 border-[#5ce7ff] dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
             
@@ -306,7 +347,7 @@ export function EmployeeManagement() {
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 required
-                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="bg-white dark:bg-gray-800 border-[#5ce7ff] dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
             
@@ -418,6 +459,94 @@ export function EmployeeManagement() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Tasks Modal */}
+      <Dialog open={isTasksModalOpen} onOpenChange={setIsTasksModalOpen}>
+        <DialogContent className="bg-white dark:bg-gray-800 max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>
+              Tasks Assigned to {selectedEmployee?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedEmployee && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{selectedEmployee.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedEmployee.email}</p>
+                  <Badge className={getRoleColor(selectedEmployee.role)}>
+                    {selectedEmployee.role}
+                  </Badge>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {getTaskCount(selectedEmployee.id)}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Tasks</div>
+                </div>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto">
+                {getAssignedTasks(selectedEmployee.id).length > 0 ? (
+                  <div className="space-y-3">
+                    {getAssignedTasks(selectedEmployee.id).map((task) => (
+                      <div
+                        key={task.id}
+                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-medium text-sm line-clamp-2 flex-1 mr-4">
+                            {task.description}
+                          </h4>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs capitalize ${
+                              task.status === 'done' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                              task.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                              task.status === 'in-review' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                            }`}
+                          >
+                            {task.status.replace('-', ' ')}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                          {task.priority && (
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span className="capitalize">{task.priority}</span>
+                            </div>
+                          )}
+                          
+                          {task.dueDate && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Updated {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : 'Unknown'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No tasks assigned</p>
+                    <p className="text-sm">This employee has no tasks assigned to them.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

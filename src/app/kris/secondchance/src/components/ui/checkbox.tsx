@@ -12,7 +12,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       type="checkbox"
       checked={checked}
       onChange={e => onCheckedChange?.(e.target.checked)}
-      className={`h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700 ${className}`}
+      className={`h-4 w-4 rounded border-[#5ce7ff] text-indigo-600 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700 ${className}`}
       aria-checked={checked}
       {...props}
     />

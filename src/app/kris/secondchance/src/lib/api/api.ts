@@ -1,5 +1,8 @@
-// API base URL
-const API_BASE_URL = 'https://6881dc8866a7eb81224c5612.mockapi.io';
+import type { Task } from '../../features/tasks/types';
+import type { Employee } from '../../features/employees/types';
+
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://688c3f3acd9d22dda5cc7695.mockapi.io/api/ziraprefix';
 
 // API endpoints
 const ENDPOINTS = {
@@ -16,19 +19,24 @@ const ENDPOINTS = {
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
 
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`API request failed for ${url}:`, error);
+    throw new Error(`Failed to connect to API: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  return response.json();
 }
 
 /**
@@ -46,7 +54,7 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
  * @param data - Request body data
  * @returns Promise with response data
  */
-export async function apiPost<T>(endpoint: string, data: any): Promise<T> {
+export async function apiPost<T, D = Record<string, unknown>>(endpoint: string, data: D): Promise<T> {
   return apiRequest<T>(endpoint, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -59,7 +67,7 @@ export async function apiPost<T>(endpoint: string, data: any): Promise<T> {
  * @param data - Request body data
  * @returns Promise with response data
  */
-export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
+export async function apiPut<T, D = Record<string, unknown>>(endpoint: string, data: D): Promise<T> {
   return apiRequest<T>(endpoint, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -79,21 +87,21 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
 
 // Task API functions
 export const taskAPI = {
-  getAll: () => apiGet(ENDPOINTS.tasks),
-  getById: (id: string) => apiGet(`${ENDPOINTS.tasks}/${id}`),
-  getByAssignee: (assigneeId: string) => apiGet(`${ENDPOINTS.tasks}?assigneeId=${assigneeId}`),
-  create: (data: any) => apiPost(ENDPOINTS.tasks, data),
-  update: (id: string, data: any) => apiPut(`${ENDPOINTS.tasks}/${id}`, data),
-  delete: (id: string) => apiDelete(`${ENDPOINTS.tasks}/${id}`),
+  getAll: () => apiGet<Task[]>(ENDPOINTS.tasks),
+  getById: (id: string) => apiGet<Task>(`${ENDPOINTS.tasks}/${id}`),
+  getByAssignee: (assigneeId: string) => apiGet<Task[]>(`${ENDPOINTS.tasks}?assigneeId=${assigneeId}`),
+  create: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => apiPost<Task>(ENDPOINTS.tasks, data),
+  update: (id: string, data: Partial<Task>) => apiPut<Task>(`${ENDPOINTS.tasks}/${id}`, data),
+  delete: (id: string) => apiDelete<void>(`${ENDPOINTS.tasks}/${id}`),
 };
 
 // Employee API functions
 export const employeeAPI = {
-  getAll: () => apiGet(ENDPOINTS.employees),
-  getById: (id: string) => apiGet(`${ENDPOINTS.employees}/${id}`),
-  create: (data: any) => apiPost(ENDPOINTS.employees, data),
-  update: (id: string, data: any) => apiPut(`${ENDPOINTS.employees}/${id}`, data),
-  delete: (id: string) => apiDelete(`${ENDPOINTS.employees}/${id}`),
+  getAll: () => apiGet<Employee[]>(ENDPOINTS.employees),
+  getById: (id: string) => apiGet<Employee>(`${ENDPOINTS.employees}/${id}`),
+  create: (data: Omit<Employee, 'id'>) => apiPost<Employee>(ENDPOINTS.employees, data),
+  update: (id: string, data: Partial<Employee>) => apiPut<Employee>(`${ENDPOINTS.employees}/${id}`, data),
+  delete: (id: string) => apiDelete<void>(`${ENDPOINTS.employees}/${id}`),
 };
 
 // Auth API functions

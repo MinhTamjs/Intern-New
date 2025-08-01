@@ -40,7 +40,7 @@ export function EmployeeManager({ onEmployeeSelect }: EmployeeManagerProps) {
     <div className="space-y-4">
       {/* Header with title and add button */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Employees</h2>
+        <h2 className="text-s">Employees</h2>
         <Button onClick={() => setIsDialogOpen(true)}>
           Add Employee
         </Button>

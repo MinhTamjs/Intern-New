@@ -46,7 +46,7 @@ function App() {
                 } />
                 
                 <Route path="/audit-log" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['admin']}>
                     <AppLayout>
                       <AuditLog />
                     </AppLayout>

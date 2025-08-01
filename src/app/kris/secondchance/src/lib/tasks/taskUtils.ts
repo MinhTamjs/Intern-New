@@ -1,6 +1,13 @@
 import type { Task, TaskStatus } from '../../features/tasks/types';
 import { auditLogHelpers } from '../audit/auditLog';
 
+// Audit log entry interface
+interface AuditLogEntry {
+  action: string;
+  entityType: string;
+  [key: string]: unknown;
+}
+
 /**
  * Updates a task's status and persists the change to localStorage
  * Also creates an audit log entry for the status change
@@ -42,7 +49,7 @@ export function updateTaskStatus(taskId: string, newStatus: TaskStatus): Task | 
     localStorage.setItem('tasks', JSON.stringify(tasks));
 
     // Create audit log entry for the status change
-    auditLogHelpers.taskStatusChanged(task.title, previousStatus, newStatus);
+    auditLogHelpers.taskStatusChanged(task.description, previousStatus, newStatus);
 
     console.log(`Task ${taskId} status updated from ${previousStatus} to ${newStatus}`);
     return updatedTask;
@@ -78,7 +85,7 @@ export function getTaskById(taskId: string): Task | null {
  * @param log - Audit log entry to check
  * @returns True if the log entry can be restored
  */
-export function canRestoreStatusChange(log: any): boolean {
+export function canRestoreStatusChange(log: AuditLogEntry): boolean {
   return log.action === 'Task status changed' && 
          log.entityType === 'task';
 } 

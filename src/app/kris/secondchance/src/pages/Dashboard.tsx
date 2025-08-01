@@ -1,43 +1,35 @@
 import { TaskBoard } from '../features/kanban/TaskBoard';
-import { TaskModal } from '../features/tasks/components/TaskModal';
 import { CreateTaskModal } from '../features/tasks/components/CreateTaskModal';
 import { useApp } from '../hooks/useApp';
-import { useAuth } from '../contexts/AuthContext';
 import { useEmployees } from '../features/employees';
+import { useAuth } from '../hooks/useAuth';
 import type { Employee } from '../features/employees/types';
 
-export function Dashboard() {
-  const { currentRole } = useAuth();
-  const {
-    selectedTask,
-    isCreateModalOpen,
-    openTaskModalInEditMode,
-    setSelectedTask,
-    setIsCreateModalOpen,
-    handleTaskCreate,
-    handleTaskUpdate,
-    handleTaskDelete
-  } = useApp();
 
+export function Dashboard() {
+  const {
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    handleTaskCreate
+    } = useApp();
+
+  const { currentRole } = useAuth();
   const { data: employees = [] } = useEmployees();
 
   return (
     <>
+      {/* Header */}
+      <div className="p-6 pb-0">
+        <div className="mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        </div>
+      </div>
+      
       <TaskBoard />
       
-      {/* Task Modal */}
-      {selectedTask && (
-        <TaskModal
-          task={selectedTask}
-          employees={employees as Employee[]}
-          currentUserRole={currentRole}
-          isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onSave={handleTaskUpdate}
-          onDelete={handleTaskDelete}
-          openInEditMode={openTaskModalInEditMode}
-        />
-      )}
+
+      
+
 
       {/* Create Task Modal */}
       <CreateTaskModal
@@ -45,6 +37,7 @@ export function Dashboard() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleTaskCreate}
         employees={employees as Employee[]}
+        currentUserRole={currentRole}
       />
     </>
   );

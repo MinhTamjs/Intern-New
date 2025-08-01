@@ -10,6 +10,7 @@ export interface Employee {
   name: string; // Full name of the employee
   email: string; // Email address for communication
   role: Role; // User role determining permissions and access
+  department?: string; // Optional department information
 }
 
 /**

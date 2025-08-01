@@ -5,7 +5,10 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { FileText, Search, Filter, Calendar, User, Activity } from 'lucide-react';
+import { FileText, Search, Filter, Calendar, User, Activity, Shield } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { toast } from 'sonner';
+import { getRolePermissions } from '../lib/roles/roleManager';
 
 interface AuditLogEntry {
   id: string;
@@ -25,6 +28,10 @@ export const AuditLog = () => {
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [entityFilter, setEntityFilter] = useState<string>('all');
   const [userFilter, setUserFilter] = useState<string>('all');
+
+  const { currentRole } = useAuth();
+  const permissions = getRolePermissions(currentRole);
+  const canClearLogs = permissions.canClearAuditLog;
 
   // Load audit logs from localStorage
   useEffect(() => {
@@ -113,10 +120,16 @@ export const AuditLog = () => {
 
   // Clear audit logs
   const clearLogs = () => {
+    if (!canClearLogs) {
+      toast.error('Only administrators can clear audit logs');
+      return;
+    }
+
     if (window.confirm('Are you sure you want to clear all audit logs? This action cannot be undone.')) {
       localStorage.removeItem('auditLogs');
       setLogs([]);
       setFilteredLogs([]);
+      toast.success('Audit logs cleared successfully');
     }
   };
 
@@ -125,7 +138,7 @@ export const AuditLog = () => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-xl font-bold text-gray-900 dark:text-white mt-2">
           Track all important actions and changes in the system
         </p>
       </div>
@@ -141,7 +154,7 @@ export const AuditLog = () => {
                 placeholder="Search logs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="pl-10 bg-white dark:bg-gray-800 border-[#5ce7ff] dark:border-gray-600 text-gray-900 dark:text-white"
               />
             </div>
           </div>
@@ -191,10 +204,22 @@ export const AuditLog = () => {
             <Filter className="h-4 w-4" />
             Clear Filters
           </Button>
-          <Button variant="outline" onClick={clearLogs} className="flex items-center gap-2 text-red-600 hover:text-red-700">
-            <Activity className="h-4 w-4" />
-            Clear Logs
-          </Button>
+          {canClearLogs ? (
+            <Button variant="outline" onClick={clearLogs} className="flex items-center gap-2 text-red-600 hover:text-red-700">
+              <Activity className="h-4 w-4" />
+              Clear Logs
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              disabled 
+              className="flex items-center gap-2 text-gray-400 cursor-not-allowed"
+              title="Only administrators can clear audit logs"
+            >
+              <Shield className="h-4 w-4" />
+              Clear Logs
+            </Button>
+          )}
         </div>
       </div>
 
@@ -252,13 +277,13 @@ export const AuditLog = () => {
       {/* Audit log table */}
       <Card>
         <CardHeader>
-          <CardTitle>Audit Log Entries</CardTitle>
+          <CardTitle className="text-2xl font-bold">Audit Log Entries</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredLogs.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {logs.length === 0 ? 'No audit logs found' : 'No logs match your filters'}
               </p>
             </div>

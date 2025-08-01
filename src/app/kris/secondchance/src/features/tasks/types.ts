@@ -2,19 +2,37 @@
 export type TaskStatus = 'pending' | 'in-progress' | 'in-review' | 'done';
 
 /**
+ * Label interface for task labeling system
+ */
+export interface Label {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/**
  * Core Task interface representing a task in the system
  * Contains all task data including metadata and relationships
  */
+export interface TaskLabel {
+  id: string;
+  name: string;
+  color: string;
+  category: 'priority' | 'type' | 'status' | 'team' | 'custom';
+  bgColor: string;
+  textColor: string;
+}
+
 export interface Task {
-  id: string; // Unique identifier for the task
-  title: string; // Human-readable task title
-  description: string; // Detailed task description
-  assigneeIds: string[]; // IDs of the employees assigned to this task
-  status: TaskStatus; // Current status in the workflow
-  customColor?: string; // Optional custom background color for the task card
-  dueData?: number; // Unix timestamp for due date (from API)
-  createdAt?: string; // ISO timestamp when task was created
-  updatedAt?: string; // ISO timestamp when task was last modified
+  id: string;
+  description: string;
+  assigneeIds: string[];
+  status: TaskStatus;
+  dueDate: string; // Fixed property name
+  labels: TaskLabel[]; // Labels array
+  priority: 'low' | 'medium' | 'high';
+  customColor: string;
+  updatedAt: string;
 }
 
 /**
@@ -22,13 +40,13 @@ export interface Task {
  * Used when submitting task creation forms
  */
 export interface CreateTaskData {
-  title: string; // Task title (required)
-  description: string; // Task description (required)
-  assigneeIds: string[]; // IDs of assigned employees (required)
-  status: TaskStatus; // Initial task status (required)
-  customColor?: string; // Optional custom background color
-  createdAt?: string; // Optional creation timestamp
-  updatedAt?: string; // Optional update timestamp
+  description: string;
+  assigneeIds: string[];
+  status: TaskStatus;
+  dueDate: string; // Fixed property name
+  labels: TaskLabel[]; // Labels array
+  priority: 'low' | 'medium' | 'high';
+  customColor: string;
 }
 
 /**
@@ -36,10 +54,11 @@ export interface CreateTaskData {
  * All fields are optional to allow partial updates
  */
 export interface UpdateTaskData {
-  title?: string; // New task title
-  description?: string; // New task description
-  assigneeIds?: string[]; // New assignee IDs
-  status?: TaskStatus; // New task status
-  customColor?: string; // New custom background color
-  updatedAt?: string; // Timestamp of the update
+  description?: string;
+  assigneeIds?: string[];
+  status?: TaskStatus;
+  dueDate?: string; // Fixed property name
+  labels?: TaskLabel[]; // Labels array
+  priority?: 'low' | 'medium' | 'high';
+  customColor?: string;
 } 

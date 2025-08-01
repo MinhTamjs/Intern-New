@@ -1,7 +1,8 @@
 import type { Role } from '../../features/employees/types';
+import type { Task } from '../../features/tasks/types';
 
 // Permission interface
-interface Permissions {
+export interface Permissions {
   canViewAllTasks: boolean;
   canViewOwnTasks: boolean;
   canCreateTask: boolean;
@@ -13,7 +14,8 @@ interface Permissions {
   canEditEmployee: boolean;
   canDeleteEmployee: boolean;
   canViewAuditLog: boolean;
-  canViewTask: (task: any) => boolean;
+  canClearAuditLog: boolean;
+  canViewTask: (task: Task) => boolean;
 }
 
 // Role permissions mapping
@@ -30,6 +32,7 @@ const ROLE_PERMISSIONS: Record<Role, Permissions> = {
     canEditEmployee: true,
     canDeleteEmployee: true,
     canViewAuditLog: true,
+    canClearAuditLog: true,
     canViewTask: () => true,
   },
   manager: {
@@ -44,6 +47,7 @@ const ROLE_PERMISSIONS: Record<Role, Permissions> = {
     canEditEmployee: false,
     canDeleteEmployee: false,
     canViewAuditLog: false,
+    canClearAuditLog: false,
     canViewTask: () => true,
   },
   employee: {
@@ -58,7 +62,8 @@ const ROLE_PERMISSIONS: Record<Role, Permissions> = {
     canEditEmployee: false,
     canDeleteEmployee: false,
     canViewAuditLog: false,
-    canViewTask: (task: any) => task.assigneeId === 'current-user-id',
+    canClearAuditLog: false,
+    canViewTask: (task: Task) => task.assigneeIds.includes('current-user-id'),
   },
 };
 

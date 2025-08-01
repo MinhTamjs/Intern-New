@@ -46,6 +46,16 @@ const addLogEntry = (entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'user' | 'u
       userRole: user.role
     };
 
+    // Debug logging
+    console.log('Creating audit log entry:', {
+      action: logEntry.action,
+      entity: logEntry.entity,
+      entityType: logEntry.entityType,
+      user: logEntry.user,
+      userRole: logEntry.userRole,
+      timestamp: logEntry.timestamp
+    });
+
     // Get existing logs
     const existingLogs = localStorage.getItem('auditLogs');
     const logs: AuditLogEntry[] = existingLogs ? JSON.parse(existingLogs) : [];
@@ -58,6 +68,8 @@ const addLogEntry = (entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'user' | 'u
 
     // Save back to localStorage
     localStorage.setItem('auditLogs', JSON.stringify(trimmedLogs));
+    
+    console.log('Audit log entry saved successfully. Total logs:', trimmedLogs.length);
   } catch (error) {
     console.error('Error adding audit log entry:', error);
   }

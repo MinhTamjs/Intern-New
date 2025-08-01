@@ -5,7 +5,7 @@ import { useTasks, useUpdateTask, useCreateTask, useDeleteTask } from '../featur
 import { useEmployees } from '../features/employees';
 import { getRolePermissions } from '../lib/roles/roleManager';
 import { auditLogHelpers } from '../lib/audit/auditLog';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { AppContext } from '../contexts/AppContext';
 import type { Task, TaskStatus } from '../features/tasks/types';
 import type { Employee } from '../features/employees/types';
@@ -37,33 +37,64 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   // Get current user from employees data
   const currentUser = (employees as Employee[]).find(emp => emp.id === user?.id) || (employees as Employee[])[0];
 
-  // Migrate tasks from old assigneeId structure to new assigneeIds array structure
+  // Migrate tasks to new schema structure
   const migratedTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) return [];
     
     return (tasks as unknown[]).map(task => {
       if (!task) return null;
       
-      // If task has old assigneeId structure, migrate it
-      if ((task as any).assigneeId && !(task as any).assigneeIds) {
-        return {
-          ...task,
-          assigneeIds: [(task as any).assigneeId],
-          assigneeId: undefined
-        } as unknown as Task;
+      const migratedTask: Partial<Task> & { label?: string } = { ...task };
+      
+      // Ensure all required fields exist with defaults
+      if (!migratedTask.description) {
+        migratedTask.description = '';
       }
-      // If task already has assigneeIds, ensure it's an array
-      if ((task as any).assigneeIds) {
-        return {
-          ...task,
-          assigneeIds: Array.isArray((task as any).assigneeIds) ? (task as any).assigneeIds : []
-        } as unknown as Task;
+      
+      if (!migratedTask.assigneeIds) {
+        migratedTask.assigneeIds = [];
       }
-      // Fallback: create empty assigneeIds array
-      return {
-        ...task,
-        assigneeIds: []
-      } as unknown as Task;
+      
+      if (!migratedTask.status) {
+        migratedTask.status = 'pending';
+      }
+      
+      if (!migratedTask.dueDate) {
+        migratedTask.dueDate = '';
+      }
+      
+      if (!migratedTask.labels) {
+        // Handle migration from old 'label' property to new 'labels' array
+        if (migratedTask.label && typeof migratedTask.label === 'string' && migratedTask.label.trim()) {
+          // Convert old single label to new labels array format
+          migratedTask.labels = [{
+            id: `migrated-${Date.now()}`,
+            name: migratedTask.label,
+            color: '#3B82F6', // Default blue color
+            category: 'custom',
+            bgColor: '#eff6ff',
+            textColor: '#3B82F6'
+          }];
+        } else {
+          migratedTask.labels = [];
+        }
+        // Remove the old label property
+        delete migratedTask.label;
+      }
+      
+      if (!migratedTask.priority) {
+        migratedTask.priority = 'medium';
+      }
+      
+      if (!migratedTask.customColor) {
+        migratedTask.customColor = '';
+      }
+      
+      if (!migratedTask.updatedAt) {
+        migratedTask.updatedAt = new Date().toISOString();
+      }
+      
+      return migratedTask as Task;
     }).filter(Boolean) as Task[]; // Remove any null values
   }, [tasks]);
 
@@ -95,7 +126,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       { id: taskId, data: { status: newStatus } },
       {
         onSuccess: () => {
-          auditLogHelpers.taskStatusChanged(task.title, task.status, newStatus);
+          auditLogHelpers.taskStatusChanged(task.description, task.status, newStatus);
           toast.success('Task status updated successfully');
         },
         onError: (error) => {
@@ -124,7 +155,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
     deleteTaskMutation.mutate(taskId, {
       onSuccess: () => {
-        auditLogHelpers.taskDeleted(task.title);
+        auditLogHelpers.taskDeleted(task.description);
         toast.success('Task deleted successfully');
         setSelectedTask(null);
       },
@@ -145,7 +176,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
     createTaskMutation.mutate(taskData, {
       onSuccess: (newTask) => {
-        auditLogHelpers.taskCreated((newTask as Task).title);
+        auditLogHelpers.taskCreated((newTask as Task).description);
         toast.success('Task created successfully');
         setIsCreateModalOpen(false);
       },
@@ -158,31 +189,48 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
   // Handle task updates
   const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
+    console.log('handleTaskUpdate called with:', { taskId, updates });
+    
     const task = migratedTasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task) {
+      console.error('Task not found:', taskId);
+      return;
+    }
+
+    console.log('Found task:', task);
+    console.log('Permissions:', { 
+      canEditTask: permissions.canEditTask, 
+      canViewAllTasks: permissions.canViewAllTasks,
+      currentUserId: currentUser?.id,
+      taskAssigneeIds: task.assigneeIds
+    });
 
     // Permission checks
     if (!permissions.canEditTask) {
+      console.error('Permission denied: cannot edit tasks');
       toast.error('You do not have permission to edit tasks');
       return;
     }
 
     if (!permissions.canViewAllTasks && !task.assigneeIds.includes(currentUser?.id || '')) {
+      console.error('Permission denied: cannot edit this specific task');
       toast.error('You can only edit your own tasks');
       return;
     }
 
+    console.log('Permission checks passed, calling updateTaskMutation');
     updateTaskMutation.mutate(
       { id: taskId, data: updates },
       {
         onSuccess: () => {
-          auditLogHelpers.taskUpdated(task.title, 'Task details updated');
+          console.log('Task update successful');
+          auditLogHelpers.taskUpdated(task.description, 'Task details updated');
           toast.success('Task updated successfully');
           setSelectedTask(null);
         },
         onError: (error) => {
+          console.error('Task update failed:', error);
           toast.error('Failed to update task');
-          console.error('Task update error:', error);
         },
       }
     );
@@ -211,8 +259,12 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
   // Handle task color change
   const handleTaskColorChange = (taskId: string, color: string | null) => {
+    console.log('handleTaskColorChange called:', { taskId, color });
     const task = migratedTasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task) {
+      console.error('Task not found:', taskId);
+      return;
+    }
 
     // Permission checks for task color updates
     if (!permissions.canEditTask) {
@@ -225,17 +277,19 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       return;
     }
 
+    console.log('Updating task color via mutation:', { taskId, color });
     updateTaskMutation.mutate(
-      { id: taskId, data: { customColor: color || undefined } },
+      { id: taskId, data: { customColor: color || '' } },
       {
-        onSuccess: () => {
+        onSuccess: (updatedTask) => {
+          console.log('Task color update successful:', updatedTask);
           // Log the color change for audit purposes
-          auditLogHelpers.taskUpdated(task.title, `Task color ${color ? 'changed' : 'reset'}`);
+          auditLogHelpers.taskUpdated(task.description, `Task color ${color ? 'changed' : 'reset'}`);
           toast.success(color ? 'Task color updated successfully' : 'Task color reset to default');
         },
         onError: (error) => {
-          toast.error('Failed to update task color');
           console.error('Task color update error:', error);
+          toast.error('Failed to update task color');
         },
       }
     );

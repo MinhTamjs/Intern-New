@@ -39,8 +39,7 @@ export function useCreateTask() {
       const taskData = {
         ...data,
         status: data.status || 'pending', // Default to pending status
-        createdAt: data.createdAt || generateTimestamp(), // Set creation timestamp
-        updatedAt: data.updatedAt || generateTimestamp(), // Set update timestamp
+        updatedAt: generateTimestamp(), // Set update timestamp
       };
       return api.tasks.create(taskData);
     },
@@ -71,7 +70,7 @@ export function useUpdateTask() {
       // Ensure updatedAt timestamp is set for all updates
       const updateData = {
         ...data,
-        updatedAt: data.updatedAt || generateTimestamp(),
+        updatedAt: generateTimestamp(),
       };
       return api.tasks.update(id, updateData);
     },
